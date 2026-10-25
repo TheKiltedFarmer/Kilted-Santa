@@ -499,7 +499,7 @@ function waysToHelp() {
   if (me.isAdopt) F.filter(f => f.status === "Adopted" && f.gift === "Not started" && !f.handledBy).slice(0, 3).forEach(f =>
     items.push(["📞", "Check in with Family " + f.id + "'s adopter", f.adopter, "Open", () => goFamily(f.id)]));
   if (me.isLead) S.crew.filter(c => c.access === "Pending").slice(0, 3).forEach(c =>
-    items.push(["🧝", "Welcome " + c.name + " to the crew", c.wants, "Approve", () => go("crew")]));
+    items.push(["🧝", "Welcome " + c.name + " to the crew", c.wants, "Approve", () => approveDialog(c)]));
   if (!items.length) return h("div", { class: "empty" }, "All caught up! Post a task if you spot something that needs doing.");
   return items.map(([ico, title, sub, label, fn]) => h("div", { class: "help-item" },
     h("span", { class: "ico", "aria-hidden": "true", text: ico }),
@@ -857,7 +857,7 @@ function pendingCard(c) {
   const form = h("form", { class: "card stack", style: "border:2px solid var(--gold)", onsubmit: async e => {
       e.preventDefault(); const fd = new FormData(form);
       const r = await act($("button[type=submit]", form), "crew_approve", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team") });
-      if (r && r.extra) showCode(r.extra);
+      if (r && r.extra) { toast(firstName(c.name) + " is on the crew! 🎉"); showCode(r.extra); }
     } },
     h("div", { class: "row" }, h("b", { style: "font-size:17px", text: c.name }), c.town ? h("span", { class: "small muted", text: "· " + c.town }) : null,
       h("span", { class: "tiny muted", style: "margin-left:auto", text: "signed up " + ago(c.submitted) })),
@@ -886,7 +886,7 @@ function crewCard(c) {
     c.wants ? h("div", { class: "small", style: "margin-top:4px", text: c.wants }) : null,
     h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
     c.me ? null : h("div", { style: "margin-top:8px" }, telLinks(c.phone, c.email)));
-  if (me.isLead) {
+  if (me.isLead && !c.me) {
     const form = h("form", { class: "grid2", style: "margin-top:10px", onsubmit: async e => {
         e.preventDefault(); const fd = new FormData(form);
         await act($("button[type=submit]", form), "crew_update", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team"), access: fd.get("access") });
@@ -902,6 +902,41 @@ function crewCard(c) {
     card.append(form);
   }
   return card;
+}
+// Approve a waiting volunteer from anywhere (Home or Crew), with a clear yes/no result.
+function approveDialog(c) {
+  let close;
+  const role = h("select", { name: "role" }, S.roles.map(r => opt(r, r, r === "ELF")));
+  const team = h("input", { type: "text", name: "team", list: "team-list-4", placeholder: "Optional" });
+  const btn = h("button", { class: "btn", type: "submit" }, "✅ Welcome " + firstName(c.name) + " to the crew");
+  const err = h("div", { class: "banner hidden", role: "alert" });
+  const form = h("form", { class: "stack", onsubmit: async e => {
+      e.preventDefault(); err.classList.add("hidden");
+      btn.disabled = true; btn.textContent = "Approving…";
+      try {
+        const r = await api("crew_approve", { row: c.row, name: c.name, role: role.value, team: team.value }, true);
+        close(); toast(firstName(c.name) + " is on the crew! 🎉");
+        if (r.extra) showCode(r.extra);
+      } catch (ex) {
+        err.textContent = (ex && ex.message) || "That didn't save. Please try again.";
+        err.classList.remove("hidden");
+        btn.disabled = false; btn.textContent = "✅ Welcome " + firstName(c.name) + " to the crew";
+      }
+    } },
+    h("h3", { text: "Welcome " + c.name + "?" }),
+    h("dl", { class: "kv" },
+      h("dt", null, "Wants to"), h("dd", { text: c.wants || "—" }),
+      h("dt", null, "When"), h("dd", { text: c.availability || "—" }),
+      h("dt", null, "Vehicle"), h("dd", { text: c.vehicle || "—" }),
+      h("dt", null, "Background ✓"), h("dd", { text: c.background || "—" }),
+      c.notes ? [h("dt", null, "Notes"), h("dd", { text: c.notes })] : null,
+      h("dt", null, "Phone"), h("dd", { text: c.phone || "—" }),
+      h("dt", null, "Email"), h("dd", { text: c.email || "— (you'll text their code)" })),
+    h("div", { class: "grid2" },
+      h("label", { class: "f" }, "Role", role),
+      h("label", { class: "f" }, "Santa team", team, h("datalist", { id: "team-list-4" }, teamNames().map(t => h("option", { value: t }))))),
+    btn, err);
+  close = modal(form);
 }
 function showCode(x) {
   const msg = "Hi " + firstName(x.name) + "! You're one of Santa's ELVES 🎅 Here's your way into Santa's Operations Hub:\n" +
