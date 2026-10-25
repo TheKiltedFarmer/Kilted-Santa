@@ -200,6 +200,25 @@
   .empty { text-align: center; color: var(--ink-soft); padding: 30px 10px; }
   .picked { border: 2px solid var(--red); }
 
+  legend .hint { font-family: "Nunito", system-ui, sans-serif; font-size: 14px; font-weight: 400; }
+
+  /* photo / document uploads */
+  .upload { display: flex; flex-direction: column; gap: 2px; }
+  .drop {
+    position: relative; display: flex; align-items: center; gap: 12px; margin-top: 8px;
+    min-height: 74px; padding: 12px 14px; border: 2px dashed var(--line); border-radius: 14px;
+    background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .drop:hover { border-color: var(--green-bright); }
+  .drop.has { border-style: solid; border-color: var(--green-bright); background: var(--green-soft); }
+  .drop.bad { border-color: var(--red); background: var(--danger-bg); }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .drop:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .drop-ico { font-size: 26px; }
+  .drop-txt { font-weight: 700; overflow-wrap: anywhere; }
+  .drop .thumb { margin-left: auto; width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex: none; }
+  .area-note { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--gold); font-size: 15px; }
+
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
   footer { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 30px 0 50px; }
@@ -255,8 +274,9 @@
             <input type="text" name="address" autocomplete="street-address" required></label>
           <label class="f">City / Town <span class="req">*</span>
             <input type="text" name="town" autocomplete="address-level2" required></label>
-          <label class="f">ZIP
-            <input type="text" name="zip" inputmode="numeric" autocomplete="postal-code"></label>
+          <label class="f">ZIP <span class="req">*</span>
+            <input type="text" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="10" required></label>
+          <div class="area-note full" id="area-note" hidden role="status"></div>
           <label class="f">Best way to reach you
             <select name="contactPref">
               <option>Text</option><option>Phone call</option><option>Email</option>
@@ -271,6 +291,48 @@
         <p class="hint" style="margin:-6px 0 12px">First names are only seen by our team, so Santa gets the right gift to the right kiddo.</p>
         <div id="kids"></div>
         <button type="button" class="btn ghost small" id="add-kid">+ Add another child</button>
+      </fieldset>
+
+      <fieldset style="margin-top:22px">
+        <legend>Your story</legend>
+        <p class="hint" style="margin:-6px 0 12px">Every family has been through something. Telling us a little helps us share your family's need with our community, and it's how a lot of adopters find the family they want to help.</p>
+        <label class="f">What's been hard this year? <span class="hint">(optional, share as much or as little as you like)</span>
+          <textarea name="hardship" style="min-height:130px" placeholder="A job loss, a medical bill, a move, a loss in the family, just stretched too thin... whatever you're comfortable telling us."></textarea></label>
+        <div style="margin-top:14px">
+          <span class="f" style="font-weight:700">Can we share your story to help you find an adopter?</span>
+          <p class="hint" style="margin:2px 0 8px">We'd only use your kids' first names and ages. We never post photos, last names or addresses.</p>
+          <div class="choices">
+            <label class="choice"><input type="radio" name="sharePermission" value="Yes — share our story (first names & ages)" checked><div><b>Yes, share our story</b><span>First names and ages only.</span></div></label>
+            <label class="choice"><input type="radio" name="sharePermission" value="No — keep private"><div><b>Please keep it private</b><span>Only the Kilted Santa team sees it.</span></div></label>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset style="margin-top:22px">
+        <legend>A quick check <span class="hint">(helps us keep this safe for real families)</span></legend>
+        <p class="hint" style="margin:-6px 0 12px">Our Santas drive every gift themselves, so we can only go so far. Sadly, people do try to take advantage of programs like this. These two pictures help us make sure every gift reaches a real local family.</p>
+        <div class="grid">
+          <div class="upload full">
+            <span class="f" style="font-weight:700">A photo of your family <span class="req">*</span></span>
+            <span class="hint">Any recent picture works, even a quick selfie with the kids. It's only for our team to check, and we never post family photos.</span>
+            <label class="drop" id="drop-photo">
+              <input type="file" name="photo" accept="image/*">
+              <span class="drop-ico" aria-hidden="true">📷</span>
+              <span class="drop-txt">Tap to add a photo</span>
+              <img class="thumb" alt="" hidden>
+            </label>
+          </div>
+          <div class="upload full">
+            <span class="f" style="font-weight:700">Proof you live here <span class="req">*</span></span>
+            <span class="hint">A picture of your ID <em>or</em> a recent bill or lease with your address on it. Only our team sees this, never adopters. You can cover account numbers if you like.</span>
+            <label class="drop" id="drop-proof">
+              <input type="file" name="proof" accept="image/*,application/pdf">
+              <span class="drop-ico" aria-hidden="true">🏠</span>
+              <span class="drop-txt">Tap to add a photo or PDF</span>
+              <img class="thumb" alt="" hidden>
+            </label>
+          </div>
+        </div>
       </fieldset>
 
       <fieldset style="margin-top:22px">
@@ -295,7 +357,7 @@
       <label class="choice" style="margin-top:18px">
         <input type="checkbox" name="consent" required>
         <div><b>I understand how my info is shared <span class="req">*</span></b>
-        <span>My contact details are kept private and only shared with my matched adopter or a Kilted Santa volunteer to arrange gifts.</span></div>
+        <span>My contact details, photo and proof of address stay with the Kilted Santa team. My contact details are only shared with my matched adopter or a volunteer to arrange gifts, my story is only shared if I said yes above, and my photo is never posted.</span></div>
       </label>
 
       <div class="actions"><button class="btn" type="submit">Sign up our family</button></div>
@@ -417,6 +479,7 @@
 
 <footer class="wrap">
   <div id="cfg-footer"></div>
+  <p style="margin-top:10px"><a href="hub.html">🧝 ELVES: Santa's Operations Hub →</a></p>
 </footer>
 <div class="tartan" aria-hidden="true"></div>
 
@@ -428,7 +491,12 @@ const CONFIG = {
 
   EYEBROW: "Christmas Eve deliveries · Jackson County",
   INTRO: "Every Christmas Eve, a crew of kilted Santas drives the county delivering gifts to families who could use a little extra joy. Families sign up, neighbors adopt them, and volunteers make the magic happen.",
-  FOOTER: "Questions? Reach out to Justin at The Kilted Farmers. Thank you for being someone's Christmas."
+  FOOTER: "Questions? Reach out to Justin at The Kilted Farmers. Thank you for being someone's Christmas.",
+
+  // ZIP codes the Santas can reach. Keep this list the same as SERVICE_ZIPS in the Google script.
+  SERVICE_AREA_NAME: "Jackson County",
+  SERVICE_ZIPS: ["49201","49202","49203","49204","49230","49234","49237","49240","49241","49246",
+                 "49254","49259","49261","49263","49269","49272","49277","49283","49284"]
 };
 
 const ROLES = [
@@ -480,7 +548,8 @@ function showPanel(name, focus) {
 }
 $$(".path").forEach(b => b.addEventListener("click", () => showPanel(b.dataset.p, true)));
 const startHash = location.hash.replace("#", "");
-if (["family", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
+// Story posts link straight to one family: #adopt-KS-004
+const deepFamily = (startHash.match(/^adopt-(.+)$/) || [])[1] || null;
 
 /* ---------- API ---------- */
 const DEMO_FAMILIES = [
@@ -585,6 +654,99 @@ function renumberKids() {
 $("#add-kid").addEventListener("click", () => { addKid(); $("input", kidsBox.lastElementChild).focus(); });
 addKid();
 
+/* ---------- service area note ---------- */
+const zipInput = $('#f-family [name="zip"]');
+function zipOk() {
+  const z = zipInput.value.replace(/\D/g, "").slice(0, 5);
+  return z.length === 5 && CONFIG.SERVICE_ZIPS.includes(z);
+}
+function checkZip() {
+  const note = $("#area-note");
+  const z = zipInput.value.replace(/\D/g, "");
+  if (z.length < 5 || zipOk()) { note.hidden = true; return; }
+  note.textContent = "Heads up: that ZIP looks like it's outside " + CONFIG.SERVICE_AREA_NAME +
+    ". Our Santas can only drive so far, but you can still sign up and we'll let you know if we can reach you.";
+  note.hidden = false;
+}
+zipInput.addEventListener("blur", checkZip);
+zipInput.addEventListener("input", () => { if (zipInput.value.replace(/\D/g, "").length >= 5) checkZip(); });
+
+/* ---------- photo & proof uploads ---------- */
+// Big phone photos are shrunk before sending so sign-ups stay quick on slow connections.
+const uploads = { photo: null, proof: null };
+const MAX_RAW = 8 * 1024 * 1024;
+
+function toBase64(blob) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(",")[1] || "");
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+async function shrinkImage(file, maxDim) {
+  let src;
+  try { src = await createImageBitmap(file); }
+  catch (e) {
+    src = await new Promise((res, rej) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => { URL.revokeObjectURL(url); res(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); };
+      img.src = url;
+    });
+  }
+  const w = src.width || src.naturalWidth, h = src.height || src.naturalHeight;
+  const scale = Math.min(1, maxDim / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.82));
+  if (!blob) throw new Error("encode");
+  return blob;
+}
+async function prepFile(file, maxDim) {
+  const type = (file.type || "").toLowerCase();
+  if (type === "application/pdf") {
+    if (file.size > MAX_RAW) throw new Error("That PDF is too big. Please use a smaller file or a photo instead.");
+    return { name: file.name, type, data: await toBase64(file) };
+  }
+  if (type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name)) {
+    try {
+      const blob = await shrinkImage(file, maxDim);
+      return { name: file.name.replace(/\.\w+$/, "") + ".jpg", type: "image/jpeg", data: await toBase64(blob), preview: URL.createObjectURL(blob) };
+    } catch (e) {
+      const t = type || "image/heic";
+      if (file.size > MAX_RAW || !["image/jpeg","image/png","image/webp","image/heic","image/heif"].includes(t))
+        throw new Error("We couldn't read that picture. Please try a different photo.");
+      return { name: file.name, type: t, data: await toBase64(file) };
+    }
+  }
+  throw new Error("Please choose a photo (or a PDF for proof of address).");
+}
+function wireUpload(key, maxDim) {
+  const box = $("#drop-" + key), input = $("input", box), txt = $(".drop-txt", box), thumb = $(".thumb", box);
+  const emptyText = txt.textContent;
+  input.addEventListener("change", async () => {
+    const file = input.files && input.files[0];
+    box.classList.remove("has", "bad"); thumb.hidden = true; uploads[key] = null;
+    if (!file) { txt.textContent = emptyText; return; }
+    txt.textContent = "Getting it ready…";
+    try {
+      const prepared = await prepFile(file, maxDim);
+      uploads[key] = prepared;
+      box.classList.add("has");
+      txt.textContent = "✓ Added. Tap to change";
+      if (prepared.preview) { thumb.src = prepared.preview; thumb.hidden = false; }
+    } catch (err) {
+      box.classList.add("bad");
+      txt.textContent = err.message || "That file didn't work. Please try another.";
+      input.value = "";
+    }
+  });
+}
+wireUpload("photo", 1600);
+wireUpload("proof", 2000);
+
 $("#f-family").addEventListener("submit", e => {
   e.preventDefault();
   const f = e.target; clearErr(f);
@@ -596,26 +758,37 @@ $("#f-family").addEventListener("submit", e => {
   if (!val(f, "phone")) missing.push("a phone number");
   if (!val(f, "address")) missing.push("your street address");
   if (!val(f, "town")) missing.push("your city or town");
+  if (val(f, "zip").replace(/\D/g, "").length < 5) missing.push("your ZIP code");
   if (!kids.length) missing.push("at least one child");
   if (kids.some(k => !k.age || !k.wishes)) missing.push("an age and wishes for each child");
+  if (!uploads.photo) missing.push("a photo of your family");
+  if (!uploads.proof) missing.push("a picture of your ID or a bill with your address");
   if (!f.elements.consent.checked) missing.push("the checkbox about how your info is shared");
   if (missing.length) return showErr(f, "Almost there! Please add " + missing.join(", ") + ".");
 
-  submitWith(f, "Sending…", {
+  const strip = u => ({ name: u.name, type: u.type, data: u.data });
+  const contactPref = (val(f, "contactPref") || "text").toLowerCase();
+  const inArea = zipOk();
+  submitWith(f, "Sending… (photos can take a moment)", {
     type: "family", website: val(f, "website"),
     name: val(f, "name"), phone: val(f, "phone"), email: val(f, "email"),
     address: val(f, "address"), town: val(f, "town"), zip: val(f, "zip"),
     contactPref: val(f, "contactPref"), adults: val(f, "adults"),
     kids, household: val(f, "household"), story: val(f, "story"),
+    hardship: val(f, "hardship"), sharePermission: radio(f, "sharePermission"),
+    photo: strip(uploads.photo), proof: strip(uploads.proof),
     privateNotes: val(f, "privateNotes"), santaVisit: radio(f, "santaVisit"), consent: true
   }, res => {
     const tag = document.createElement("div");
     tag.className = "famno"; tag.textContent = "Family " + (res.familyNumber || "");
-    success(f, "🎄", "You're on the list!", [
+    const lines = [
       "Save your family number in case you need to reach us.",
-      "Our team will look over your sign-up and reach out by " + (val(f, "contactPref") || "text").toLowerCase() + " once your family is matched with an adopter.",
-      "Merry Christmas from all of us."
-    ], tag);
+      "Our team will look over your sign-up and keep in touch by " + contactPref + " as Christmas gets closer."
+    ];
+    if (res.inArea === false || (res.inArea === undefined && !inArea))
+      lines.push("Since your ZIP is outside " + CONFIG.SERVICE_AREA_NAME + ", we'll let you know whether our Santas can make it out to you.");
+    lines.push("Merry Christmas from all of us.");
+    success(f, "🎄", "You're on the list!", lines, tag);
   });
 });
 
@@ -627,7 +800,18 @@ async function loadFamilies(force) {
   loading = true;
   const box = $("#fams");
   box.innerHTML = '<div class="empty">Loading families…</div>';
-  try { families = await getFamilies(); loaded = true; renderFamilies(); }
+  try {
+    families = await getFamilies(); loaded = true; renderFamilies();
+    if (deepFamily && !force) {
+      const wanted = decodeURIComponent(deepFamily);
+      const f = families.find(x => x.id.toLowerCase() === wanted.toLowerCase());
+      if (f) pickFamily(f);
+      else {
+        const note = el("div", "card empty", "Family " + wanted + " has already found their Christmas angel. Thank you! These families are still waiting:");
+        note.style.marginBottom = "14px"; $("#fams").prepend(note);
+      }
+    }
+  }
   catch (e) {
     box.innerHTML = "";
     const d = document.createElement("div"); d.className = "empty";
@@ -772,10 +956,14 @@ $("#f-volunteer").addEventListener("submit", e => {
   }, () => {
     success(f, roles.includes("Kilted Santa") ? "🎅" : "⭐", "You're on the nice list!", [
       "Thanks for signing up to help with: " + roles.join(", ") + ".",
-      "We'll be in touch as December gets closer with dates and details."
+      "A Lead ELF will welcome you to the crew and send your ELF code for Santa's Operations Hub, where the ELVES run the show."
     ]);
   });
 });
+
+/* ---------- open the right section from the link (runs last, once everything is set up) ---------- */
+if (deepFamily) showPanel("adopt", false);
+else if (["family", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
 </script>
 </body>
 </html>

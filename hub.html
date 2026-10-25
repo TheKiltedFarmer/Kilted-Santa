@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#d23a3f">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Santa's Operations Hub</title>
+<link rel="icon" href="data:image/jpeg;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfdfb;
+    --snow: #eef6f0;
+    --surface: #ffffff;
+    --surface-2: #fdf6e6;
+    --ink: #24302a;
+    --ink-soft: #5c6b62;
+    --line: #dfe9e2;
+    --red: #c8323a;
+    --red-soft: #fdeaea;
+    --green: #24682f;
+    --green-bright: #3a9a4a;
+    --green-soft: #e4f3e7;
+    --gold: #d9a93a;
+    --gold-soft: #fbf1d8;
+    --blue-soft: #e8f0fb;
+    --blue: #2f5f9e;
+    --shadow: 0 1px 2px rgba(36,104,47,.06), 0 8px 24px rgba(36,104,47,.08);
+    --radius: 16px;
+    color-scheme: light only;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+  body {
+    margin: 0; color: var(--ink); background: linear-gradient(180deg, var(--snow) 0, var(--bg) 420px) var(--bg);
+    font: 16px/1.5 "Nunito", system-ui, -apple-system, sans-serif; min-height: 100vh;
+  }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; line-height: 1.15; margin: 0; color: var(--green); }
+  a { color: var(--green); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .tartan {
+    height: 10px;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 14px, rgba(36,104,47,.75) 14px 24px, transparent 24px 30px, rgba(255,255,255,.85) 30px 31px, transparent 31px 44px),
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(36,104,47,.55) 3px 7px, transparent 7px 12px),
+      #d23a3f;
+  }
+  .hidden { display: none !important; }
+  .muted { color: var(--ink-soft); }
+  .small { font-size: 14px; }
+  .tiny { font-size: 12.5px; }
+
+  /* header */
+  .brand { display: flex; align-items: center; gap: 12px; padding: 14px 0 10px; }
+  .brand img { width: 52px; height: 52px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgba(217,169,58,.6); flex: none; }
+  .brand h1 { font-size: 22px; }
+  .brand .sub { font-size: 12.5px; color: var(--ink-soft); line-height: 1.3; }
+  .who { margin-left: auto; text-align: right; font-size: 14px; line-height: 1.3; }
+  .who b { display: block; }
+  .linkbtn { background: none; border: 0; padding: 0; color: var(--green); text-decoration: underline; cursor: pointer; font-size: 13.5px; }
+  @media (max-width: 560px) {
+    .brand .sub, #me-role { display: none; } .brand h1 { font-size: 18px; } .brand img { width: 44px; height: 44px; }
+    .who { font-size: 13px; } .who br { display: none; }
+  }
+
+  /* nav */
+  nav.tabs {
+    position: sticky; top: 0; z-index: 20; background: rgba(251,253,251,.94); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs .wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-top: 6px; padding-bottom: 6px; }
+  nav.tabs .wrap::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; border: 0; background: transparent; padding: 8px 12px; border-radius: 999px; cursor: pointer;
+    font-weight: 800; font-size: 14.5px; color: var(--ink-soft); display: inline-flex; gap: 6px; align-items: center;
+  }
+  .tab[aria-selected="true"] { background: var(--green); color: #fff; }
+  .tab .count { background: var(--red); color: #fff; border-radius: 999px; font-size: 11.5px; padding: 0 7px; line-height: 18px; }
+  .tab[aria-selected="true"] .count { background: #fff; color: var(--green); }
+
+  main { padding: 18px 0 80px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+  .stack > * + * { margin-top: 12px; }
+  .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 22px 0 10px; flex-wrap: wrap; }
+  .section-title h2 { font-size: 22px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1 1 auto; min-width: 0; }
+
+  .btn {
+    border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 800; cursor: pointer; font-size: 14.5px;
+    background: var(--green); color: #fff; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  }
+  .btn.red { background: var(--red); }
+  .btn.gold { background: var(--gold); color: #3a2a05; }
+  .btn.ghost { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); }
+  .btn.sm { padding: 6px 12px; font-size: 13.5px; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn:focus-visible, .tab:focus-visible, input:focus, select:focus, textarea:focus, .fam-head:focus-visible {
+    outline: 3px solid var(--gold); outline-offset: 2px;
+  }
+
+  input[type=text], input[type=tel], input[type=email], input[type=search], input[type=password], select, textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 16px;
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  label.f { display: block; font-weight: 700; font-size: 14px; }
+  label.f > input, label.f > select, label.f > textarea { margin-top: 5px; font-weight: 400; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid2 .full { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px;
+    font-weight: 700; font-size: 13.5px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; }
+
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12.5px; font-weight: 800; white-space: nowrap; }
+  .b-pending { background: var(--gold-soft); color: #7a5a08; }
+  .b-available { background: var(--blue-soft); color: var(--blue); }
+  .b-adopted { background: var(--green-soft); color: var(--green); }
+  .b-delivered { background: var(--green); color: #fff; }
+  .b-hidden { background: #eee; color: #555; }
+  .b-red { background: var(--red-soft); color: var(--red); }
+  .b-role { background: var(--surface-2); color: #7a5a08; }
+
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .stat { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; cursor: pointer; box-shadow: var(--shadow); }
+  .stat b { display: block; font-family: "Fraunces", Georgia, serif; font-size: 28px; color: var(--green); line-height: 1.1; }
+  .stat span { font-size: 13.5px; color: var(--ink-soft); font-weight: 700; }
+  .stat.alert b { color: var(--red); }
+
+  /* lists */
+  .help-item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+  .help-item:first-child { border-top: 0; padding-top: 2px; }
+  .help-item .ico { font-size: 22px; flex: none; width: 30px; text-align: center; }
+  .help-item .btn { white-space: nowrap; flex: none; }
+  .feed-item { padding: 8px 0; border-top: 1px dashed var(--line); font-size: 14.5px; }
+  .feed-item:first-child { border-top: 0; }
+
+  .task { border-left: 5px solid var(--gold); }
+  .task.claimed { border-left-color: var(--blue); }
+  .task.done { border-left-color: var(--green-bright); opacity: .8; }
+  .task h3 { font-family: "Nunito", sans-serif; font-size: 16.5px; color: var(--ink); font-weight: 800; }
+  .meta { font-size: 13px; color: var(--ink-soft); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 3px; }
+
+  /* families */
+  .fam { padding: 0; overflow: hidden; }
+  .fam-head { display: flex; gap: 10px; align-items: center; padding: 14px 16px; cursor: pointer; width: 100%; background: none; border: 0; text-align: left; }
+  .fam-head h3 { font-size: 19px; }
+  .fam-body { border-top: 1px solid var(--line); padding: 14px 16px 16px; }
+  .kidline { font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+  .kid { padding: 8px 0; border-top: 1px dashed var(--line); }
+  .kid:first-child { border-top: 0; }
+  .block { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .block.private { background: var(--red-soft); border-color: #f3c9cb; }
+  .block h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+  .block.private h4 { color: var(--red); }
+  .steps { display: flex; flex-wrap: wrap; gap: 6px; }
+  .step { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .step.done { background: var(--green-soft); border-color: var(--green-soft); color: var(--green); }
+  .step.now { background: var(--green); border-color: var(--green); color: #fff; }
+  .notes { white-space: pre-wrap; font-size: 14px; }
+  dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: 14.5px; }
+  dl.kv dt { color: var(--ink-soft); font-weight: 700; }
+  dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+
+  .story-box { white-space: pre-wrap; background: var(--bg); border: 1px dashed var(--gold); border-radius: 12px; padding: 12px; font-size: 15px; }
+
+  .empty { text-align: center; color: var(--ink-soft); padding: 24px 10px; }
+  .banner { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 12px; padding: 10px 14px; font-size: 14.5px; }
+
+  /* login */
+  .login { max-width: 440px; margin: 30px auto; }
+  .login .logo { display: block; width: 150px; height: 150px; margin: 0 auto 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px #fff, 0 0 0 7px rgba(217,169,58,.55), 0 14px 34px rgba(36,104,47,.16); }
+  .login h1 { text-align: center; font-size: 30px; }
+  .login .elves { text-align: center; color: var(--ink-soft); margin: 6px 0 18px; font-size: 14.5px; }
+  .login .elves b { color: var(--red); }
+
+  /* modal + toast */
+  .overlay { position: fixed; inset: 0; background: rgba(20,30,24,.55); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { background: var(--surface); border-radius: 18px; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  .modal img { max-width: 100%; border-radius: 10px; display: block; margin: 0 auto; }
+  .codebig { font-family: ui-monospace, Menlo, monospace; font-size: 30px; font-weight: 800; letter-spacing: .08em; text-align: center; background: var(--gold-soft); border: 2px dashed var(--gold); border-radius: 12px; padding: 12px; margin: 10px 0; user-select: all; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 700; z-index: 60; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .toast.err { background: var(--red); }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="tartan" aria-hidden="true"></div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="wrap hidden">
+  <form class="login card" id="login-form" novalidate>
+    <img class="logo" alt="The Kilted Santa Project logo" src="data:image/jpeg;base64,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">
+    <h1>Santa's Operations Hub</h1>
+    <p class="elves"><b>E</b>nthusiastic <b>L</b>oving <b>V</b>olunteers <b>E</b>mpowering <b>S</b>anta</p>
+    <div class="stack">
+      <label class="f">Your email or phone number
+        <input type="text" name="login" autocomplete="username" inputmode="email" required></label>
+      <label class="f">Your ELF code
+        <input type="text" name="code" autocomplete="one-time-code" autocapitalize="characters" placeholder="ELF-XXXXXX" required></label>
+      <label class="row small" style="font-weight:700"><input type="checkbox" name="remember" checked style="width:18px;height:18px;accent-color:var(--green)"> Keep me signed in on this device</label>
+      <button class="btn" type="submit" style="width:100%;justify-content:center;padding:12px">Open the hub</button>
+      <div id="login-msg" class="banner hidden" role="alert"></div>
+      <p class="small muted" style="text-align:center;margin:0">Not an ELF yet? <a id="signup-link" href="./#volunteer">Sign up to volunteer</a>, and a Lead will send your code.</p>
+    </div>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <header class="wrap brand">
+    <img alt="" src="data:image/jpeg;base64,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">
+    <div>
+      <h1>Santa's Operations Hub</h1>
+      <div class="sub">Kilted Santa Project · run by the ELVES</div>
+    </div>
+    <div class="who">
+      <b id="me-name"></b>
+      <span id="me-role" class="muted"></span><br>
+      <button class="linkbtn" id="refresh-btn" type="button">Refresh</button> ·
+      <button class="linkbtn" id="logout-btn" type="button">Sign out</button>
+    </div>
+  </header>
+  <nav class="tabs" aria-label="Hub sections">
+    <div class="wrap" role="tablist" id="tabs"></div>
+  </nav>
+  <main class="wrap" id="view" aria-live="polite"></main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root" aria-live="assertive"></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const CONFIG = {
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw3hH_RCsag3kpqohxNVZVGdIiA2f-XzsBlO_8ovpJhGDgUurZkjYJiLKo7wMjt7ljufQ/exec",
+  REFRESH_SECONDS: 60
+};
+/* ================================================== */
+
+const $ = (s, el = document) => el.querySelector(s);
+const STORE_KEY = "ks-hub-cred";
+
+/* ---------- tiny DOM helper (text is always set safely) ---------- */
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  if (props) for (const [k, v] of Object.entries(props)) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "style") el.style.cssText = v;
+    else if (k === "value") el.value = v;
+    else if (k === "checked" || k === "disabled" || k === "selected") el[k] = !!v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) {
+    if (c === null || c === undefined || c === false) continue;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+const opt = (value, label, sel) => h("option", { value, selected: sel }, label ?? value);
+
+/* ---------- storage (per device convenience only) ---------- */
+function loadCred() {
+  try { const s = localStorage.getItem(STORE_KEY) || sessionStorage.getItem(STORE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+function saveCred(c, remember) {
+  try {
+    localStorage.removeItem(STORE_KEY); sessionStorage.removeItem(STORE_KEY);
+    (remember ? localStorage : sessionStorage).setItem(STORE_KEY, JSON.stringify(c));
+  } catch (e) {}
+}
+function clearCred() { try { localStorage.removeItem(STORE_KEY); sessionStorage.removeItem(STORE_KEY); } catch (e) {} }
+
+/* ---------- state ---------- */
+let cred = null, me = null, S = null, memCred = null;
+const ui = {
+  tab: "home", famFilter: null, famSearch: "", open: new Set(), taskFilter: "open", taskArea: "",
+  newTask: null, storiesAll: false, crewWants: "", pendingRender: false, busy: false
+};
+
+/* ---------- API ---------- */
+async function api(action, payload = {}, quiet) {
+  const c = cred || memCred;
+  const res = await fetch(CONFIG.SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ type: "hub", action, login: c.login, code: c.code, ...payload })
+  }).then(r => r.json());
+  if (res.auth === false) { logout(res.error); throw new Error(res.error); }
+  if (!res.ok) { if (!quiet) toast(res.error || "Something went wrong.", true); throw new Error(res.error); }
+  if (res.state) { S = res.state; me = res.me; render(!quiet || action !== "state"); }
+  if (res.msg && !quiet) toast(res.msg);
+  return res;
+}
+async function act(btn, action, payload) {
+  if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.replaceChildren(h("span", { class: "spin" }), " Saving"); }
+  try { return await api(action, payload); }
+  catch (e) { if (!/match|paused/.test(e.message || "")) {} return null; }
+  finally { if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = btn.dataset.label; } }
+}
+
+/* ---------- login / logout ---------- */
+$("#login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, msg = $("#login-msg");
+  const c = { login: f.login.value.trim(), code: f.code.value.trim() };
+  msg.classList.add("hidden");
+  if (!c.login || !c.code) { msg.textContent = "Please enter your email or phone and your ELF code."; msg.classList.remove("hidden"); return; }
+  const btn = $("button[type=submit]", f); btn.disabled = true; btn.textContent = "Checking your code…";
+  try {
+    const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ type: "hub", action: "login", ...c }) }).then(r => r.json());
+    if (!res.ok) throw new Error(res.error || "That didn't work.");
+    cred = c; memCred = c; saveCred(c, f.remember.checked);
+    S = res.state; me = res.me; showApp();
+    toast("Welcome, " + firstName(me.name) + "! 🎄");
+  } catch (err) {
+    msg.textContent = err.message || "We couldn't reach the hub. Check your connection.";
+    msg.classList.remove("hidden");
+  } finally { btn.disabled = false; btn.textContent = "Open the hub"; }
+});
+function logout(message) {
+  clearCred(); cred = null; memCred = null; me = null; S = null;
+  $("#app").classList.add("hidden"); $("#login").classList.remove("hidden");
+  const msg = $("#login-msg");
+  if (message) { msg.textContent = message; msg.classList.remove("hidden"); } else msg.classList.add("hidden");
+}
+$("#logout-btn").addEventListener("click", () => logout());
+$("#refresh-btn").addEventListener("click", () => refresh(true));
+
+async function refresh(loud) {
+  if (!cred && !memCred) return;
+  try { await api("state", {}, !loud); if (loud) toast("Up to date ✨"); } catch (e) {}
+}
+function showApp() {
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  render();
+}
+setInterval(() => { if ((cred || memCred) && document.visibilityState === "visible") refresh(false); }, CONFIG.REFRESH_SECONDS * 1000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && (cred || memCred)) refresh(false); });
+
+/* ---------- helpers ---------- */
+function toast(text, err) {
+  const t = h("div", { class: "toast" + (err ? " err" : ""), text });
+  $("#toast-root").replaceChildren(t);
+  setTimeout(() => t.remove(), err ? 5000 : 2600);
+}
+function firstName(n) { return String(n || "").split(/[\s(]/)[0] || n; }
+function ago(iso) {
+  if (!iso) return "";
+  const d = new Date(iso); if (isNaN(d)) return iso;
+  const s = (Date.now() - d.getTime()) / 1000;
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 86400 * 7) return Math.floor(s / 86400) + "d ago";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function kidsLine(f, withNames = true) {
+  return f.kids.map(k => (withNames && k.name ? k.name : (k.gender || "Child")) + (k.age ? " (" + k.age + ")" : "")).join(", ");
+}
+function statusBadge(s) {
+  const cls = { "Pending review": "b-pending", "Available": "b-available", "Adopted": "b-adopted", "Delivered": "b-delivered", "Not listed": "b-hidden" }[s] || "b-hidden";
+  const label = { "Pending review": "Needs review", "Available": "Open for adoption" }[s] || s;
+  return h("span", { class: "badge " + cls, text: label });
+}
+function telLinks(phone, email, name) {
+  const p = String(phone || "").replace(/[^\d+]/g, "");
+  return h("span", { class: "row" },
+    p ? h("a", { class: "btn ghost sm", href: "tel:" + p }, "📞 Call") : null,
+    p ? h("a", { class: "btn ghost sm", href: "sms:" + p }, "💬 Text") : null,
+    email ? h("a", { class: "btn ghost sm", href: "mailto:" + email }, "✉️ Email") : null);
+}
+function isEditing() {
+  const a = document.activeElement;
+  return a && $("#view").contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+}
+document.addEventListener("focusout", () => setTimeout(() => { if (ui.pendingRender && !isEditing()) render(); }, 50));
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copied! Paste it anywhere 📋"); }
+  catch (e) {
+    const ta = h("textarea", { style: "position:fixed;opacity:0" }); ta.value = text; document.body.append(ta); ta.select();
+    try { document.execCommand("copy"); toast("Copied!"); } catch (e2) { toast("Couldn't copy. Press and hold to select instead.", true); }
+    ta.remove();
+  }
+}
+function modal(...content) {
+  const close = () => ov.remove();
+  const ov = h("div", { class: "overlay", onclick: e => { if (e.target === ov) close(); } },
+    h("div", { class: "modal", role: "dialog", "aria-modal": "true" }, ...content,
+      h("div", { class: "row", style: "justify-content:flex-end;margin-top:14px" }, h("button", { class: "btn ghost", onclick: close }, "Close"))));
+  document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } });
+  $("#modal-root").replaceChildren(ov);
+  return close;
+}
+function adoptLink(id) { return (S.publicUrl || new URL("./", location.href).href) + "#adopt-" + id; }
+function famById(id) { return S.families.find(f => f.id === id); }
+function goFamily(id) { ui.tab = "families"; ui.famFilter = "all"; ui.famSearch = ""; ui.open.add(id); render(); setTimeout(() => { const el = document.getElementById("fam-" + id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30); }
+function go(tab, extra) { Object.assign(ui, extra || {}); ui.tab = tab; render(); window.scrollTo({ top: 0 }); }
+
+/* ---------- render shell ---------- */
+const TABS = [
+  ["home", "🏠 Home"], ["tasks", "✅ Tasks"], ["families", "🎁 Families"], ["routes", "🛷 Routes"], ["crew", "🧝 Crew"], ["stories", "📣 Stories"]
+];
+function render(force) {
+  if (!S || !me) return;
+  if (isEditing()) {
+    // Background refreshes wait until you're done typing; your own actions show right away.
+    if (!force) { ui.pendingRender = true; return; }
+    document.activeElement.blur();
+  }
+  ui.pendingRender = false;
+  $("#me-name").textContent = "Hi, " + firstName(me.name) + "!";
+  $("#me-role").textContent = me.role;
+  const counts = {
+    tasks: S.tasks.filter(t => t.status === "Open").length,
+    families: me.isAdopt ? S.families.filter(f => f.status === "Pending review").length : 0,
+    crew: me.isLead ? S.crew.filter(c => c.access === "Pending").length : 0
+  };
+  $("#tabs").replaceChildren(...TABS.map(([id, label]) => h("button", {
+    class: "tab", role: "tab", "aria-selected": String(ui.tab === id), onclick: () => go(id)
+  }, label, counts[id] ? h("span", { class: "count", text: counts[id] }) : null)));
+  const y = window.scrollY;
+  const view = { home: viewHome, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories }[ui.tab]();
+  $("#view").replaceChildren(view);
+  window.scrollTo({ top: y });
+}
+
+/* ================= HOME ================= */
+function viewHome() {
+  const F = S.families;
+  const by = s => F.filter(f => f.status === s).length;
+  const wrapped = F.filter(f => ["Wrapped", "Loaded"].includes(f.gift) && f.status !== "Delivered").length;
+  const roleLine = {
+    "Lead": "You're a Lead. The ELVES run the show; you can step in anywhere, and you welcome new ELVES on the Crew tab.",
+    "Adoption ELF": "You're an Adoption ELF: you check new families, match adopters and plan routes.",
+    "ELF": "You're an ELF: grab a task, move gifts along, and team up with the crew."
+  }[me.role];
+  const stats = h("div", { class: "stats" },
+    stat(F.length, "families signed up", () => go("families", { famFilter: "all" })),
+    me.isAdopt ? stat(by("Pending review"), "need review", () => go("families", { famFilter: "Pending review" }), by("Pending review") > 0) : null,
+    stat(by("Available"), "waiting for an adopter", () => go("families", { famFilter: "Available" })),
+    stat(by("Adopted"), "adopted", () => go("families", { famFilter: "Adopted" })),
+    stat(wrapped, "wrapped & ready", () => go("families", { famFilter: "Adopted" })),
+    stat(by("Delivered"), "delivered 🎅", () => go("families", { famFilter: "Delivered" })),
+    stat(S.tasks.filter(t => t.status === "Open").length, "open tasks", () => go("tasks", { taskFilter: "open" })),
+    stat(S.crew.filter(c => c.access === "Approved").length, "ELVES on the crew", () => go("crew"))
+  );
+
+  const mine = S.tasks.filter(t => t.claimedBy === me.name && t.status !== "Done");
+  return h("div", { class: "stack" },
+    h("div", { class: "card", style: "background:linear-gradient(135deg,#fff, #fdf6e6)" },
+      h("h2", { style: "font-size:24px" }, me.isLead ? "Welcome back, " + firstName(me.name) + " 🎅" : "Hi " + firstName(me.name) + ", thanks for being an ELF 🎄"),
+      h("p", { class: "muted", style: "margin:6px 0 0" }, roleLine)),
+    stats,
+    h("div", { class: "section-title" }, h("h2", null, "Ways to help right now"), h("button", { class: "btn sm gold", onclick: () => go("tasks", { newTask: {} }) }, "+ Post a task")),
+    h("div", { class: "card" }, waysToHelp()),
+    mine.length ? h("div", null,
+      h("div", { class: "section-title" }, h("h2", null, "On your plate")),
+      h("div", { class: "stack" }, mine.map(taskCard))) : null,
+    h("div", { class: "section-title" }, h("h2", null, "What the crew's been up to")),
+    h("div", { class: "card" }, S.log.length ? S.log.slice(0, 20).map(l => h("div", { class: "feed-item" },
+      h("b", null, firstName(l.who)), " ", l.what, " ", h("span", { class: "tiny muted", text: "· " + ago(l.when) })))
+      : h("div", { class: "empty", text: "Nothing yet. Be the first!" }))
+  );
+}
+function stat(n, label, onclick, alert) {
+  return h("button", { class: "stat" + (alert ? " alert" : ""), onclick }, h("b", { text: n }), h("span", { text: label }));
+}
+function waysToHelp() {
+  const items = [];
+  const F = S.families;
+  if (me.isAdopt) F.filter(f => f.status === "Pending review").slice(0, 4).forEach(f =>
+    items.push(["🔍", "Check Family " + f.id + "'s proof and approve them", f.inArea && f.inArea !== "Yes" ? "Outside the service area — double-check the distance" : (f.town || ""), "Review", () => goFamily(f.id)]));
+  S.tasks.filter(t => t.status === "Open").slice(0, 5).forEach(t =>
+    items.push(["📌", t.title, [t.area, t.due && "due " + t.due, "posted by " + firstName(t.createdBy)].filter(Boolean).join(" · "), "I'll do it", b => act(b, "task_claim", { taskId: t.id })]));
+  F.filter(f => f.gift === "Gifts in" && f.status !== "Delivered").slice(0, 3).forEach(f =>
+    items.push(["🎀", "Wrap gifts for Family " + f.id, kidsLine(f), "Open", () => goFamily(f.id)]));
+  F.filter(f => f.status === "Available" && /^(Yes|Story only)/.test(f.share)).slice(0, 3).forEach(f =>
+    items.push(["📣", "Share Family " + f.id + "'s story so they find an adopter", kidsLine(f), "Get the post", () => go("stories")]));
+  const randomLeft = F.filter(f => f.status === "Available" && !f.team).length;
+  if (me.isLead && randomLeft) items.push(["🎲", randomLeft + " famil" + (randomLeft === 1 ? "y isn't" : "ies aren't") + " adopted yet", "Share their stories, or plan them as random deliveries", "Routes", () => go("routes")]);
+  if (me.isAdopt) F.filter(f => f.status === "Adopted" && !f.team).slice(0, 3).forEach(f =>
+    items.push(["🛷", "Put Family " + f.id + " on a Christmas Eve route", f.town, "Plan", () => go("routes")]));
+  if (me.isAdopt) F.filter(f => f.status === "Adopted" && f.gift === "Not started" && !f.handledBy).slice(0, 3).forEach(f =>
+    items.push(["📞", "Check in with Family " + f.id + "'s adopter", f.adopter, "Open", () => goFamily(f.id)]));
+  if (me.isLead) S.crew.filter(c => c.access === "Pending").slice(0, 3).forEach(c =>
+    items.push(["🧝", "Welcome " + c.name + " to the crew", c.wants, "Approve", () => go("crew")]));
+  if (!items.length) return h("div", { class: "empty" }, "All caught up! Post a task if you spot something that needs doing.");
+  return items.map(([ico, title, sub, label, fn]) => h("div", { class: "help-item" },
+    h("span", { class: "ico", "aria-hidden": "true", text: ico }),
+    h("div", { class: "grow" }, h("b", { text: title }), sub ? h("div", { class: "small muted", text: sub }) : null),
+    h("button", { class: "btn sm", onclick: e => fn(e.currentTarget) }, label)));
+}
+
+/* ================= TASKS ================= */
+function viewTasks() {
+  const filters = [["open", "Open"], ["mine", "Mine"], ["claimed", "In progress"], ["done", "Done"], ["all", "All"]];
+  let list = S.tasks.slice().reverse();
+  if (ui.taskFilter === "open") list = list.filter(t => t.status === "Open");
+  if (ui.taskFilter === "mine") list = list.filter(t => t.claimedBy === me.name && t.status !== "Done");
+  if (ui.taskFilter === "claimed") list = list.filter(t => t.status === "Claimed");
+  if (ui.taskFilter === "done") list = list.filter(t => t.status === "Done");
+  if (ui.taskArea) list = list.filter(t => t.area === ui.taskArea);
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Task board"),
+      ui.newTask ? null : h("button", { class: "btn gold", onclick: () => { ui.newTask = {}; render(); } }, "+ Post a task")),
+    ui.newTask ? newTaskForm() : null,
+    h("div", { class: "chips", role: "group", "aria-label": "Filter tasks" },
+      filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.taskFilter === v), onclick: () => { ui.taskFilter = v; render(); } }, l))),
+    h("div", { class: "chips" },
+      h("button", { class: "chip", "aria-pressed": String(!ui.taskArea), onclick: () => { ui.taskArea = ""; render(); } }, "Every area"),
+      S.areas.map(a => h("button", { class: "chip", "aria-pressed": String(ui.taskArea === a), onclick: () => { ui.taskArea = a; render(); } }, a))),
+    list.length ? h("div", { class: "stack" }, list.map(taskCard)) : h("div", { class: "card empty" }, ui.taskFilter === "open" ? "No open tasks. Spot something that needs doing? Post it!" : "Nothing here.")
+  );
+}
+function newTaskForm() {
+  const pre = ui.newTask || {};
+  const form = h("form", { class: "card stack", style: "border:2px solid var(--gold)", onsubmit: async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const btn = $("button[type=submit]", form);
+      const res = await act(btn, "task_create", { title: fd.get("title"), area: fd.get("area"), familyId: fd.get("familyId"), due: fd.get("due"), details: fd.get("details") });
+      if (res) { ui.newTask = null; ui.taskFilter = "open"; render(); }
+    } },
+    h("h3", null, "Post a task for the crew"),
+    h("div", { class: "grid2" },
+      h("label", { class: "f full" }, "What needs doing?", h("input", { type: "text", name: "title", maxlength: 120, required: true, value: pre.title || "", placeholder: "e.g. Pick up donated coats from St. John's" })),
+      h("label", { class: "f" }, "Area", h("select", { name: "area" }, S.areas.map(a => opt(a, a, pre.area === a)))),
+      h("label", { class: "f" }, "For a family? (optional)", h("select", { name: "familyId" }, opt("", "No specific family"),
+        S.families.filter(f => f.status !== "Not listed").map(f => opt(f.id, f.id + " · " + kidsLine(f), pre.familyId === f.id)))),
+      h("label", { class: "f" }, "When? (optional)", h("input", { type: "text", name: "due", maxlength: 40, placeholder: "e.g. by Dec 18, Saturday 10am" })),
+      h("label", { class: "f full" }, "Details (optional)", h("textarea", { name: "details", maxlength: 1000, placeholder: "Where, who to call, what to bring…" }))),
+    h("div", { class: "row" }, h("button", { class: "btn", type: "submit" }, "Post it"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => { ui.newTask = null; render(); } }, "Cancel")));
+  return form;
+}
+function taskCard(t) {
+  const mineT = t.claimedBy === me.name;
+  const cls = "card task" + (t.status === "Claimed" ? " claimed" : "") + (t.status === "Done" ? " done" : "");
+  return h("div", { class: cls },
+    h("div", { class: "row" },
+      h("div", { class: "grow" },
+        h("h3", { text: (t.status === "Done" ? "✅ " : "") + t.title }),
+        h("div", { class: "meta" },
+          h("span", { text: t.area }),
+          t.family ? h("a", { href: "#", onclick: e => { e.preventDefault(); goFamily(t.family); } }, "Family " + t.family) : null,
+          t.due ? h("span", { text: "⏰ " + t.due }) : null,
+          h("span", { text: "posted by " + firstName(t.createdBy) + " " + ago(t.created) }))),
+      t.status === "Open" ? h("span", { class: "badge b-pending", text: "Open" })
+        : t.status === "Claimed" ? h("span", { class: "badge b-available", text: (mineT ? "You've" : firstName(t.claimedBy) + " has") + " got it" })
+        : h("span", { class: "badge b-adopted", text: "Done by " + firstName(t.claimedBy) })),
+    t.details ? h("p", { class: "small", style: "margin:8px 0 0;white-space:pre-wrap", text: t.details }) : null,
+    h("div", { class: "row", style: "margin-top:10px" },
+      t.status === "Open" ? h("button", { class: "btn sm", onclick: e => act(e.currentTarget, "task_claim", { taskId: t.id }) }, "🙋 I'll do it") : null,
+      t.status !== "Done" && (mineT || t.status === "Open") ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_done", { taskId: t.id }) }, "✅ Mark done") : null,
+      t.status === "Claimed" && (mineT || me.isLead) ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_unclaim", { taskId: t.id }) }, "Let someone else take it") : null,
+      t.status === "Claimed" && !mineT && !me.isLead ? h("span", { class: "small muted", text: "Want to help? Message " + firstName(t.claimedBy) + " on the Crew tab." }) : null,
+      t.status === "Done" ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_reopen", { taskId: t.id }) }, "Reopen") : null,
+      (t.createdBy === me.name || me.isLead) ? h("button", { class: "btn sm ghost", style: "margin-left:auto", onclick: e => { if (confirmInline(e.currentTarget, "Delete?")) act(e.currentTarget, "task_delete", { taskId: t.id }); } }, "Delete") : null));
+}
+function confirmInline(btn, label) {
+  if (btn.dataset.armed) return true;
+  btn.dataset.armed = "1"; const old = btn.textContent; btn.textContent = label + " Tap again";
+  setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = old; } }, 3000);
+  return false;
+}
+
+/* ================= FAMILIES ================= */
+function viewFamilies() {
+  const F = S.families;
+  if (!ui.famFilter) ui.famFilter = me.isAdopt && F.some(f => f.status === "Pending review") ? "Pending review" : "all";
+  const filters = [
+    me.isAdopt ? ["Pending review", "Needs review"] : null,
+    ["Available", "Open for adoption"], ["Adopted", "Adopted"], ["Delivered", "Delivered"], ["all", "All"]
+  ].filter(Boolean);
+  const q = ui.famSearch.trim().toLowerCase();
+  let list = F.filter(f => ui.famFilter === "all" || f.status === ui.famFilter);
+  if (q) list = list.filter(f => [f.id, f.town, f.adopter, f.parent, f.team, ...f.kids.map(k => k.name)].join(" ").toLowerCase().includes(q));
+  list.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const search = h("input", { type: "search", placeholder: "Search family #, kid's name, town…", value: ui.famSearch,
+    oninput: e => { ui.famSearch = e.target.value; clearTimeout(viewFamilies.t); viewFamilies.t = setTimeout(() => { const a = document.activeElement; const pos = a.selectionStart || 0; render(true); const n = $("#view input[type=search]"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }, 250); } });
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Families"),
+      h("span", { class: "small muted", text: me.isAdopt ? "You can see private details. Please keep them in the hub." : "Parent names and addresses stay with the adoption team." })),
+    h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.famFilter === v),
+      onclick: () => { ui.famFilter = v; render(); } }, l + " (" + (v === "all" ? F.length : F.filter(f => f.status === v).length) + ")"))),
+    search,
+    list.length ? h("div", { class: "stack" }, list.map(famCard)) : h("div", { class: "card empty", text: F.length ? "No families match." : "No families have signed up yet." }));
+}
+function famCard(f) {
+  const isOpen = ui.open.has(f.id);
+  const toggle = () => { isOpen ? ui.open.delete(f.id) : ui.open.add(f.id); render(); };
+  return h("div", { class: "card fam", id: "fam-" + f.id },
+    h("button", { class: "fam-head", "aria-expanded": String(isOpen), onclick: toggle },
+      h("div", { class: "grow" },
+        h("div", { class: "row" }, h("h3", { text: "Family " + f.id }), statusBadge(f.status),
+          f.status !== "Pending review" && f.status !== "Available" && f.status !== "Delivered" ? h("span", { class: "badge b-role", text: "🎁 " + f.gift }) : null,
+          f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null),
+        h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") + (f.handledBy ? " · handled by " + firstName(f.handledBy) : "") })),
+      h("span", { "aria-hidden": "true", style: "font-size:20px", text: isOpen ? "▴" : "▾" })),
+    isOpen ? famBody(f) : null);
+}
+function famBody(f) {
+  const body = h("div", { class: "fam-body stack" });
+
+  // Adoption desk actions
+  if (me.isAdopt) {
+    body.append(h("div", { class: "row" },
+      f.status === "Pending review" ? h("button", { class: "btn", onclick: e => act(e.currentTarget, "fam_approve", { familyId: f.id }) }, "✅ Approve: proof checks out") : null,
+      f.hasProof ? h("button", { class: "btn ghost sm", onclick: e => viewFile(e.currentTarget, f.id, "proof") }, "🏠 View proof of address") : null,
+      f.hasPhoto ? h("button", { class: "btn ghost sm", onclick: e => viewFile(e.currentTarget, f.id, "photo") }, "📷 View family photo") : null,
+      h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_take", { familyId: f.id }) }, f.handledBy === me.name ? "Hand off" : "🙋 I'll handle this family")));
+    if (f.inArea && f.inArea !== "Yes") body.append(h("div", { class: "banner", text: "⚠️ ZIP " + (f.zip || "") + " is outside " + S.serviceArea + ". Make sure a Santa team can reach them before approving." }));
+  }
+
+  // Kids
+  body.append(h("div", { class: "block" }, h("h4", null, "The kids"),
+    f.kids.map(k => h("div", { class: "kid" },
+      h("b", { text: (k.name || "Child") + (k.age ? ", " + k.age : "") + (k.gender ? " · " + k.gender : "") }),
+      (k.clothing || k.shoe) ? h("div", { class: "small muted", text: [k.clothing && "Clothes " + k.clothing, k.shoe && "Shoes " + k.shoe].filter(Boolean).join(" · ") }) : null,
+      k.wishes ? h("div", { class: "small" }, h("b", null, "Wishes: "), k.wishes) : null,
+      k.likes ? h("div", { class: "small muted", text: "Loves: " + k.likes }) : null)),
+    f.household ? h("div", { class: "small", style: "margin-top:8px" }, h("b", null, "For the household: "), f.household) : null,
+    f.note ? h("div", { class: "small", style: "margin-top:6px;font-style:italic", text: "Note to adopters: “" + f.note + "”" }) : null));
+
+  // Gift progress
+  body.append(h("div", { class: "block" }, h("h4", null, "Gift progress"),
+    h("div", { class: "steps" }, S.giftSteps.map((s, i) => {
+      const cur = S.giftSteps.indexOf(f.gift);
+      return h("button", { class: "step" + (i < cur ? " done" : "") + (i === cur ? " now" : ""), onclick: e => { if (s !== f.gift) act(e.currentTarget, "fam_gift", { familyId: f.id, step: s }); } }, s);
+    })),
+    f.adopter ? h("div", { class: "small", style: "margin-top:8px" }, "Adopted by ", h("b", null, f.adopter), f.connection ? " · " + f.connection : "", f.giftPlan ? " · " + f.giftPlan : "") : null));
+
+  // Private details
+  if (f.private) {
+    body.append(h("div", { class: "block private" }, h("h4", null, "🔒 Private: adoption team" + (me.isAdopt ? "" : " & your Santa team")),
+      h("dl", { class: "kv" },
+        h("dt", null, "Parent"), h("dd", { text: f.parent || "—" }),
+        h("dt", null, "Phone"), h("dd", null, f.phone || "—", f.contactPref ? h("span", { class: "muted", text: " (prefers " + f.contactPref.toLowerCase() + ")" }) : null),
+        f.email ? [h("dt", null, "Email"), h("dd", { text: f.email })] : null,
+        h("dt", null, "Address"), h("dd", null, (f.address || "—") + (f.town ? ", " + f.town : "") + (f.zip ? " " + f.zip : ""),
+          f.address ? h("div", null, h("a", { href: "https://maps.google.com/?q=" + encodeURIComponent(f.address + ", " + f.town + " MI " + (f.zip || "")), target: "_blank", rel: "noopener" }, "Open in Maps")) : null),
+        f.adults ? [h("dt", null, "Adults"), h("dd", { text: f.adults })] : null,
+        h("dt", null, "Santa visit"), h("dd", { text: f.santaVisit || "—" }),
+        f.privateNotes ? [h("dt", null, "Their note"), h("dd", { text: f.privateNotes })] : null),
+      h("div", { style: "margin-top:8px" }, telLinks(f.phone, f.email))));
+  }
+
+  // Story
+  if (f.story || f.share) body.append(h("div", { class: "block" }, h("h4", null, "Their story"),
+    f.story ? h("p", { style: "margin:0 0 6px;white-space:pre-wrap", text: f.story }) : h("p", { class: "muted small", style: "margin:0 0 6px" }, "No story written."),
+    h("div", { class: "small muted", text: /^(Yes|Story only)/.test(f.share) ? "✅ OK to share (first names and ages only, never photos)" : "🔒 Keep private, do not post" })));
+
+  // Adopter management
+  if (me.isAdopt) {
+    if (f.adopter) {
+      body.append(h("div", { class: "block" }, h("h4", null, "Adopter"),
+        h("dl", { class: "kv" },
+          h("dt", null, "Name"), h("dd", { text: f.adopter }),
+          h("dt", null, "Phone"), h("dd", { text: f.adopterPhone || "—" }),
+          h("dt", null, "Email"), h("dd", { text: f.adopterEmail || "—" }),
+          h("dt", null, "Connect"), h("dd", { text: f.connection || "—" }),
+          h("dt", null, "Gifts"), h("dd", { text: f.giftPlan || "—" }),
+          f.adopterNotes ? [h("dt", null, "Notes"), h("dd", { text: f.adopterNotes })] : null),
+        h("div", { class: "row", style: "margin-top:8px" }, telLinks(f.adopterPhone, f.adopterEmail),
+          h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Release?")) act(e.currentTarget, "fam_release", { familyId: f.id }); } }, "Release back to Adopt page"))));
+    } else if (f.status === "Available") {
+      const form = h("form", { class: "block stack", onsubmit: async e => {
+          e.preventDefault(); const fd = new FormData(form);
+          await act($("button[type=submit]", form), "fam_adopter", { familyId: f.id, name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email"), connection: fd.get("connection"), giftPlan: fd.get("giftPlan") });
+        } },
+        h("h4", null, "Someone adopted them by phone or in person? Record it"),
+        h("div", { class: "grid2" },
+          h("label", { class: "f" }, "Adopter name", h("input", { type: "text", name: "name", required: true })),
+          h("label", { class: "f" }, "Phone", h("input", { type: "tel", name: "phone" })),
+          h("label", { class: "f" }, "Email", h("input", { type: "email", name: "email" })),
+          h("label", { class: "f" }, "Connection", h("select", { name: "connection" }, opt("Through a Kilted Santa volunteer"), opt("Directly with the family"))),
+          h("label", { class: "f full" }, "Gifts", h("select", { name: "giftPlan" }, opt("Drop gifts off for Santa to deliver"), opt("I'll deliver myself"), opt("Not sure yet")))),
+        h("div", null, h("button", { class: "btn sm", type: "submit" }, "Save adopter")));
+      body.append(form);
+    }
+    body.append(h("div", { class: "row" }, h("label", { class: "f grow" }, "Status",
+      h("select", { onchange: e => act(null, "fam_status", { familyId: f.id, status: e.target.value }) }, S.statuses.map(s => opt(s, s, s === f.status))))));
+  }
+
+  // Route
+  body.append(routeEditor(f));
+
+  // Team notes
+  const noteForm = h("form", { class: "row", onsubmit: async e => {
+      e.preventDefault(); const inp = $("input", noteForm); if (!inp.value.trim()) return;
+      const r = await act($("button", noteForm), "fam_note", { familyId: f.id, note: inp.value });
+      if (r) inp.value = "";
+    } },
+    h("input", { type: "text", class: "grow", style: "width:auto;flex:1", maxlength: 500, placeholder: "Add a note for the crew…" }),
+    h("button", { class: "btn sm", type: "submit" }, "Add"));
+  body.append(h("div", { class: "block" }, h("h4", null, "Crew notes"),
+    f.teamNotes ? h("div", { class: "notes", text: f.teamNotes }) : h("div", { class: "small muted", text: "No notes yet." }),
+    h("div", { style: "margin-top:8px" }, noteForm)));
+
+  body.append(h("div", { class: "row" },
+    h("button", { class: "btn ghost sm", onclick: () => go("tasks", { newTask: { familyId: f.id, title: "" } }) }, "+ Post a task for this family"),
+    /^(Yes|Story only)/.test(f.share) && f.status === "Available" ? h("button", { class: "btn ghost sm", onclick: () => copyText(storyPost(f)) }, "📣 Copy story post") : null,
+    h("span", { class: "tiny muted", style: "margin-left:auto", text: "Signed up " + ago(f.submitted) })));
+  return body;
+}
+function routeEditor(f) {
+  if (!me.isAdopt) return h("div", { class: "small muted", text: f.team ? "🛷 On " + f.team + (f.stop ? ", stop " + f.stop : "") : "🛷 Not on a route yet" });
+  const teams = teamNames();
+  const form = h("form", { class: "row", onsubmit: async e => {
+      e.preventDefault(); const fd = new FormData(form);
+      await act($("button", form), "fam_route", { familyId: f.id, team: fd.get("team"), stop: fd.get("stop") });
+    } },
+    h("span", { class: "small", style: "font-weight:700", text: "🛷 Route:" }),
+    h("input", { type: "text", name: "team", value: f.team, list: "team-list", placeholder: "Santa team", style: "width:auto;flex:1 1 140px" }),
+    h("input", { type: "text", name: "stop", value: f.stop, inputmode: "numeric", placeholder: "Stop #", style: "width:80px" }),
+    h("button", { class: "btn sm", type: "submit" }, "Save"),
+    f.status === "Available" && (f.team || "").toLowerCase() !== S.randomRoute.toLowerCase()
+      ? h("button", { class: "btn ghost sm", type: "button", onclick: e => act(e.currentTarget, "fam_route", { familyId: f.id, team: S.randomRoute, stop: "" }) }, "🎲 Put on " + S.randomRoute) : null,
+    h("datalist", { id: "team-list" }, teams.map(t => h("option", { value: t }))));
+  if (f.status === "Available") {
+    const willing = S.crew.filter(c => c.randomOk && c.access === "Approved" && c.team).map(c => c.team);
+    return h("div", { class: "stack" }, form, h("div", { class: "tiny muted", text: "🎲 Not adopted. Teams with a Santa OK for random deliveries: " + ([...new Set(willing)].join(", ") || "none yet") }));
+  }
+  return form;
+}
+function teamNames() {
+  const set = new Set();
+  S.crew.forEach(c => c.team && set.add(c.team.trim()));
+  S.families.forEach(f => f.team && set.add(f.team.trim()));
+  return [...set].sort();
+}
+async function viewFile(btn, familyId, which) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = "Loading…";
+  try {
+    const r = await api("file", { familyId, which }, false);
+    const bin = atob(r.data); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: r.type }));
+    const title = (which === "photo" ? "Family photo" : "Proof of address") + " · Family " + familyId;
+    if (/^image\//.test(r.type) && !/heic|heif/.test(r.type)) {
+      modal(h("h3", { style: "margin-bottom:10px", text: title }), h("img", { src: url, alt: title }),
+        h("p", { class: "tiny muted", text: "For checking only. Never posted or shared outside the adoption team." }));
+    } else {
+      modal(h("h3", { style: "margin-bottom:10px", text: title }),
+        h("p", null, "This file is a " + (r.type === "application/pdf" ? "PDF" : "photo your browser can't preview") + "."),
+        h("a", { class: "btn", href: url, target: "_blank", rel: "noopener", download: r.name }, "Open it"));
+    }
+  } catch (e) {} finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = old; } }
+}
+
+/* ================= ROUTES ================= */
+function viewRoutes() {
+  const teams = teamNames();
+  const active = S.families.filter(f => ["Adopted", "Available", "Delivered"].includes(f.status));
+  const unassignedAdopted = active.filter(f => !f.team && f.status === "Adopted");
+  const unassignedRandom = active.filter(f => !f.team && f.status === "Available");
+  const meCrew = S.crew.find(c => c.row === me.row) || {};
+  const myTeam = (me.team || "").trim();
+  const ordered = myTeam ? [myTeam, ...teams.filter(t => t.toLowerCase() !== myTeam.toLowerCase())] : teams;
+
+  const selfForm = h("form", { class: "stack", onsubmit: async e => {
+      e.preventDefault();
+      await act($("button", selfForm), "crew_update", { row: me.row, name: me.name, team: $("input[type=text]", selfForm).value, randomOk: $("input[type=checkbox]", selfForm).checked });
+    } },
+    h("div", { class: "row" },
+      h("span", { class: "small", style: "font-weight:700", text: "Your Santa team:" }),
+      h("input", { type: "text", list: "team-list-2", value: myTeam, placeholder: "e.g. Team Rudolph", style: "width:auto;flex:1 1 160px" }),
+      h("button", { class: "btn sm", type: "submit" }, "Save"),
+      h("datalist", { id: "team-list-2" }, teams.map(t => h("option", { value: t })))),
+    h("label", { class: "row small" }, h("input", { type: "checkbox", checked: meCrew.randomOk, style: "width:18px;height:18px;accent-color:var(--green)" }),
+      "🎲 I'm comfortable doing random deliveries too (families nobody adopted)"));
+
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Christmas Eve routes")),
+    h("div", { class: "banner" }, "We plan the Santas around the adoptions. Each Santa team sees the addresses for its own stops as soon as they're assigned. Families nobody adopted go on " + S.randomRoute + " unless a Santa has said they're OK with random deliveries 🎲."),
+    h("div", { class: "card" }, selfForm),
+    ordered.length ? ordered.map(t => teamCard(t, active.filter(f => (f.team || "").trim().toLowerCase() === t.toLowerCase())))
+      : h("div", { class: "card empty", text: "No Santa teams yet. Give yourself a team name above, or an Adoption ELF can put families on routes." }),
+    unassignedList("Adopted, needs a Santa (" + unassignedAdopted.length + ")", unassignedAdopted),
+    unassignedList("Not adopted: random deliveries (" + unassignedRandom.length + ")", unassignedRandom,
+      "Nobody has adopted these families yet. They go on " + S.randomRoute + " unless a Santa who's OK with random deliveries takes them."));
+}
+function unassignedList(title, list, note) {
+  if (!list.length) return null;
+  return h("div", null,
+    h("div", { class: "section-title" }, h("h2", null, title)),
+    note ? h("p", { class: "small muted", style: "margin:-4px 0 10px", text: note }) : null,
+    h("div", { class: "stack" }, list.map(f => h("div", { class: "card" },
+      h("div", { class: "row" }, h("b", { text: "Family " + f.id }), statusBadge(f.status), h("span", { class: "small muted", text: kidsLine(f) + (f.town ? " · " + f.town : "") })),
+      me.isAdopt ? h("div", { style: "margin-top:8px" }, routeEditor(f)) : null))));
+}
+function teamCard(team, stops) {
+  stops.sort((a, b) => (Number(a.stop) || 999) - (Number(b.stop) || 999));
+  const members = S.crew.filter(c => (c.team || "").trim().toLowerCase() === team.toLowerCase() && c.access === "Approved");
+  const mineTeam = (me.team || "").trim().toLowerCase() === team.toLowerCase();
+  const done = stops.filter(f => f.status === "Delivered").length;
+  return h("div", { class: "card stack", style: mineTeam ? "border:2px solid var(--green)" : "" },
+    h("div", { class: "row" }, h("h3", { style: "font-size:20px", text: "🛷 " + team }), mineTeam ? h("span", { class: "badge b-adopted", text: "Your team" }) : null,
+      h("span", { class: "small muted", style: "margin-left:auto", text: done + " of " + stops.length + " delivered" })),
+    h("div", { class: "small" }, h("b", null, "Crew: "), members.length ? members.map(c => firstName(c.name) + (c.wants && /santa/i.test(c.wants) ? " 🎅" : "") + (c.randomOk ? " 🎲" : "")).join(", ") : "nobody yet"),
+    stops.length ? stops.map(f => h("div", { class: "block" },
+      h("div", { class: "row" },
+        h("b", { text: (f.stop ? "Stop " + f.stop + " · " : "") + "Family " + f.id }), statusBadge(f.status), h("span", { class: "badge b-role", text: "🎁 " + f.gift }),
+        f.status === "Available" ? h("span", { class: "badge b-red", text: "🎲 Random delivery" }) : null),
+      h("div", { class: "small", style: "margin-top:4px", text: kidsLine(f) }),
+      f.santaVisit ? h("div", { class: "small muted", text: "🎅 " + f.santaVisit }) : null,
+      f.address ? h("div", { class: "small", style: "margin-top:4px" }, "📍 " + f.address + ", " + f.town + " ",
+        h("a", { href: "https://maps.google.com/?q=" + encodeURIComponent(f.address + ", " + f.town + " MI " + (f.zip || "")), target: "_blank", rel: "noopener" }, "Directions")) : h("div", { class: "small muted", text: f.town ? "📍 " + f.town : "" }),
+      f.privateNotes && f.private ? h("div", { class: "small", text: "📝 " + f.privateNotes }) : null,
+      (mineTeam || me.isAdopt) ? h("div", { style: "margin-top:8px" }, f.status === "Delivered"
+        ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id, undo: true }) }, "Undo delivered")
+        : h("button", { class: "btn red sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id }) }, "🎅 Delivered!")) : null))
+      : h("div", { class: "small muted", text: "No stops assigned yet." }));
+}
+
+/* ================= CREW ================= */
+function viewCrew() {
+  const approved = S.crew.filter(c => c.access === "Approved");
+  const pending = S.crew.filter(c => c.access === "Pending");
+  const paused = S.crew.filter(c => c.access === "Paused");
+  const wantsSet = new Set();
+  approved.forEach(c => c.wants.split(/,\s*/).forEach(w => { w = w.replace(/\s*\(.*$/, "").trim(); if (w) wantsSet.add(w); }));
+  const filt = ui.crewWants;
+  const shown = filt ? approved.filter(c => c.wants.includes(filt)) : approved;
+  const group = role => shown.filter(c => c.role === role);
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "The crew"), h("span", { class: "small muted", text: approved.length + " ELVES" })),
+    me.isLead && pending.length ? h("div", { class: "stack" },
+      h("h3", { style: "font-size:19px", text: "🧝 Waiting to join (" + pending.length + ")" }),
+      pending.map(pendingCard)) : null,
+    h("div", { class: "chips" },
+      h("button", { class: "chip", "aria-pressed": String(!filt), onclick: () => { ui.crewWants = ""; render(); } }, "Everyone"),
+      [...wantsSet].sort().map(w => h("button", { class: "chip", "aria-pressed": String(filt === w), onclick: () => { ui.crewWants = w; render(); } }, w))),
+    [["Lead", "Leads"], ["Adoption ELF", "Adoption ELVES"], ["ELF", "ELVES"]].map(([role, title]) => {
+      const g = group(role); if (!g.length) return null;
+      return h("div", { class: "stack" }, h("h3", { style: "font-size:19px;margin-top:8px", text: title }), g.map(crewCard));
+    }),
+    me.isLead && paused.length ? h("div", { class: "stack" }, h("h3", { style: "font-size:19px;margin-top:8px", text: "Paused" }), paused.map(crewCard)) : null);
+}
+function pendingCard(c) {
+  const form = h("form", { class: "card stack", style: "border:2px solid var(--gold)", onsubmit: async e => {
+      e.preventDefault(); const fd = new FormData(form);
+      const r = await act($("button[type=submit]", form), "crew_approve", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team") });
+      if (r && r.extra) showCode(r.extra);
+    } },
+    h("div", { class: "row" }, h("b", { style: "font-size:17px", text: c.name }), c.town ? h("span", { class: "small muted", text: "· " + c.town }) : null,
+      h("span", { class: "tiny muted", style: "margin-left:auto", text: "signed up " + ago(c.submitted) })),
+    h("dl", { class: "kv" },
+      h("dt", null, "Wants to"), h("dd", { text: c.wants || "—" }),
+      h("dt", null, "When"), h("dd", { text: c.availability || "—" }),
+      h("dt", null, "Vehicle"), h("dd", { text: c.vehicle || "—" }),
+      h("dt", null, "Background ✓"), h("dd", { text: c.background || "—" }),
+      c.notes ? [h("dt", null, "Notes"), h("dd", { text: c.notes })] : null,
+      h("dt", null, "Contact"), h("dd", { text: [c.phone, c.email].filter(Boolean).join(" · ") || "—" })),
+    h("div", { class: "grid2" },
+      h("label", { class: "f" }, "Role", h("select", { name: "role" }, S.roles.map(r => opt(r, r, r === "ELF")))),
+      h("label", { class: "f" }, "Santa team (optional)", h("input", { type: "text", name: "team", list: "team-list-3" }),
+        h("datalist", { id: "team-list-3" }, teamNames().map(t => h("option", { value: t }))))),
+    h("div", { class: "row" }, h("button", { class: "btn", type: "submit" }, "Welcome to the crew"), telLinks(c.phone, c.email)));
+  return form;
+}
+function crewCard(c) {
+  const card = h("div", { class: "card" },
+    h("div", { class: "row" },
+      h("b", { style: "font-size:17px", text: c.name + (c.me ? " (you)" : "") }),
+      h("span", { class: "badge b-role", text: c.role }),
+      c.team ? h("span", { class: "badge b-adopted", text: "🛷 " + c.team }) : null,
+      c.randomOk ? h("span", { class: "badge b-pending", text: "🎲 random deliveries OK" }) : null,
+      c.lastSeen ? h("span", { class: "tiny muted", style: "margin-left:auto", text: "in the hub " + ago(c.lastSeen) }) : null),
+    c.wants ? h("div", { class: "small", style: "margin-top:4px", text: c.wants }) : null,
+    h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
+    c.me ? null : h("div", { style: "margin-top:8px" }, telLinks(c.phone, c.email)));
+  if (me.isLead) {
+    const form = h("form", { class: "grid2", style: "margin-top:10px", onsubmit: async e => {
+        e.preventDefault(); const fd = new FormData(form);
+        await act($("button[type=submit]", form), "crew_update", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team"), access: fd.get("access") });
+      } },
+      h("label", { class: "f" }, "Role", h("select", { name: "role" }, S.roles.map(r => opt(r, r, r === c.role)))),
+      h("label", { class: "f" }, "Santa team", h("input", { type: "text", name: "team", value: c.team })),
+      h("label", { class: "f" }, "Hub access", h("select", { name: "access", disabled: c.me }, ["Approved", "Paused"].map(a => opt(a, a === "Paused" ? "Paused (can't sign in)" : a, a === c.access)))),
+      h("div", { class: "row", style: "align-items:flex-end" },
+        h("button", { class: "btn sm", type: "submit" }, "Save"),
+        h("button", { class: "btn ghost sm", type: "button", onclick: () => showCode({ code: c.code, name: c.name, phone: c.phone, emailed: false, existing: true }) }, "Show code"),
+        h("button", { class: "btn ghost sm", type: "button", onclick: async e => { if (!confirmInline(e.currentTarget, "New code?")) return; const r = await act(e.currentTarget, "crew_code", { row: c.row, name: c.name }); if (r && r.extra) showCode(r.extra); } }, "New code")));
+    if (c.me) $("[name=access]", form).closest("label").append(h("input", { type: "hidden", name: "access", value: "Approved" }));
+    card.append(form);
+  }
+  return card;
+}
+function showCode(x) {
+  const msg = "Hi " + firstName(x.name) + "! You're one of Santa's ELVES 🎅 Here's your way into Santa's Operations Hub:\n" +
+    new URL("hub.html", S.publicUrl || location.href).href + "\nSign in with your phone number or email.\nYour ELF code: " + x.code;
+  const p = String(x.phone || "").replace(/[^\d+]/g, "");
+  modal(h("h3", { text: (x.existing ? "" : "🎉 ") + firstName(x.name) + "'s ELF code" }),
+    h("div", { class: "codebig", text: x.code }),
+    h("p", { class: "small muted", text: x.emailed ? "We emailed it to them. You can also text it:" : "Send it to them:" }),
+    h("div", { class: "row" },
+      p ? h("a", { class: "btn", href: "sms:" + p + "?&body=" + encodeURIComponent(msg) }, "💬 Text it") : null,
+      h("button", { class: "btn ghost", onclick: () => copyText(msg) }, "📋 Copy message")));
+}
+
+/* ================= STORIES ================= */
+function storyPost(f) {
+  const kids = f.kids.map(k => (k.name || (k.gender === "Boy" ? "a little guy" : k.gender === "Girl" ? "a little girl" : "a kiddo")) + (k.age ? " (" + k.age + ")" : ""));
+  const kidsText = kids.length > 1 ? kids.slice(0, -1).join(", ") + " and " + kids[kids.length - 1] : kids[0] || "";
+  const lines = ["🎄 Meet Family " + f.id, "", kidsText];
+  if (f.story) lines.push("", f.story.trim());
+  else {
+    const w = f.kids.filter(k => k.wishes).map(k => (k.name || "One of the kids") + " is wishing for " + k.wishes.toLowerCase().replace(/[.!]+$/, ""));
+    if (w.length) lines.push("", w.join(". ") + ".");
+  }
+  lines.push("", "Could you be their Christmas angel? Adopt Family " + f.id + " here:", adoptLink(f.id), "", "#KiltedSantaProject #KiltedSanta");
+  return lines.join("\n");
+}
+function viewStories() {
+  const ok = S.families.filter(f => /^(Yes|Story only)/.test(f.share) && f.status !== "Pending review" && f.status !== "Not listed");
+  const list = ui.storiesAll ? ok : ok.filter(f => f.status === "Available");
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Story posts")),
+    h("div", { class: "banner" }, "Ready to copy and post. These only include families who said yes, with kids' first names and ages, never photos, last names or addresses. Each post links straight to that family's Adopt page."),
+    h("div", { class: "chips" },
+      h("button", { class: "chip", "aria-pressed": String(!ui.storiesAll), onclick: () => { ui.storiesAll = false; render(); } }, "Still need an adopter (" + ok.filter(f => f.status === "Available").length + ")"),
+      h("button", { class: "chip", "aria-pressed": String(ui.storiesAll), onclick: () => { ui.storiesAll = true; render(); } }, "All OK to share (" + ok.length + ")")),
+    list.length ? list.map(f => {
+      const text = storyPost(f);
+      return h("div", { class: "card stack" },
+        h("div", { class: "row" }, h("b", { text: "Family " + f.id }), statusBadge(f.status)),
+        h("div", { class: "story-box", text: text }),
+        h("div", { class: "row" },
+          h("button", { class: "btn", onclick: () => copyText(text) }, "📋 Copy post"),
+          h("button", { class: "btn ghost sm", onclick: () => copyText(adoptLink(f.id)) }, "🔗 Copy link only"),
+          f.status !== "Available" ? h("span", { class: "small muted", text: "Already " + f.status.toLowerCase() + ". Post a thank-you instead!" }) : null));
+    }) : h("div", { class: "card empty", text: "No stories ready yet. Once an Adoption ELF approves a family who said yes to sharing, their post shows up here." }));
+}
+
+/* ---------- start ---------- */
+(async function start() {
+  try { $("#signup-link").href = new URL("./#volunteer", location.href).href; } catch (e) {}
+  const saved = loadCred();
+  if (!saved) { $("#login").classList.remove("hidden"); return; }
+  cred = saved; memCred = saved;
+  $("#login").classList.remove("hidden");
+  const form = $("#login-form"); form.login.value = saved.login;
+  const btn = $("button[type=submit]", form); btn.disabled = true; btn.textContent = "Opening the hub…";
+  try { await api("state", {}, true); showApp(); }
+  catch (e) { if (cred) { $("#login-msg").textContent = "We couldn't reach the hub. Check your connection and try again."; $("#login-msg").classList.remove("hidden"); } }
+  finally { btn.disabled = false; btn.textContent = "Open the hub"; }
+})();
+</script>
+</body>
+</html>
