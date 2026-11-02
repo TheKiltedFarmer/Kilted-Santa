@@ -92,7 +92,11 @@
   }
 
   /* path chooser */
-  nav.paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 28px; }
+  nav.paths { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 8px 0 28px; }
+  @media (max-width: 760px) and (min-width: 561px) { nav.paths { grid-template-columns: 1fr 1fr; } }
+  .kidmini { display: grid; grid-template-columns: 1fr 110px auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .kidmini input { margin-top: 4px; }
+  .promise { background: var(--surface-2); border: 1px solid var(--gold); border-radius: 12px; padding: 12px 14px; font-size: 15px; margin: 0 0 16px; }
   .path {
     appearance: none; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
     border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer;
@@ -243,12 +247,16 @@
       <span class="ico" aria-hidden="true">🏠</span>
       <span><strong>Our family needs help</strong><small>Sign up to be adopted</small></span>
     </button>
+    <button class="path" role="tab" id="tab-swingby" aria-controls="p-swingby" aria-selected="false" data-p="swingby">
+      <span class="ico" aria-hidden="true">🎅</span>
+      <span><strong>Ask Santa to swing by</strong><small>For your family, or one you know</small></span>
+    </button>
     <button class="path" role="tab" id="tab-adopt" aria-controls="p-adopt" aria-selected="false" data-p="adopt">
       <span class="ico" aria-hidden="true">🎁</span>
       <span><strong>I want to adopt a family</strong><small>Pick a family to give to</small></span>
     </button>
     <button class="path" role="tab" id="tab-volunteer" aria-controls="p-volunteer" aria-selected="false" data-p="volunteer">
-      <span class="ico" aria-hidden="true">🎅</span>
+      <span class="ico" aria-hidden="true">🧝</span>
       <span><strong>I want to volunteer</strong><small>Santas, wrappers, drivers &amp; more</small></span>
     </button>
   </nav>
@@ -428,6 +436,65 @@
     </form>
   </section>
 
+  <!-- ==================== SWING-BY ==================== -->
+  <section class="panel" id="p-swingby" role="tabpanel" aria-labelledby="tab-swingby">
+    <h2>Ask Santa to swing by</h2>
+    <p class="lead">Know a family who could use a little Christmas magic? Or would your own kids light up at a visit from a Santa in a kilt? Let us know where to find them.</p>
+    <div class="promise"><b>An honest heads-up:</b> swing-bys are random stops that Santa fits in around our adopted families, so we can't promise a visit or a time. Santa looks at every request, though, and squeezes in as many as the sleigh can manage on Dec 23 and 24. 🎅</div>
+
+    <form id="f-swingby" class="card" novalidate>
+      <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <fieldset>
+        <legend>Who is this for?</legend>
+        <div class="choices cols">
+          <label class="choice"><input type="radio" name="forWho" value="mine" checked><div><b>My family</b><span>We'd love a visit!</span></div></label>
+          <label class="choice"><input type="radio" name="forWho" value="someone"><div><b>A family I know</b><span>A neighbor, friend or relative.</span></div></label>
+        </div>
+        <div class="grid" id="sb-requester" hidden style="margin-top:12px">
+          <label class="f">Your name <span class="req">*</span><input type="text" name="requester" autocomplete="name"></label>
+          <label class="f">Your phone<input type="tel" name="requesterPhone" autocomplete="tel"></label>
+        </div>
+      </fieldset>
+
+      <fieldset style="margin-top:22px">
+        <legend>Where should Santa stop?</legend>
+        <div class="grid">
+          <label class="f full"><span id="sb-name-label">Your name</span> <span class="req">*</span>
+            <input type="text" name="name"></label>
+          <label class="f"><span id="sb-phone-label">Phone</span> <span class="req" id="sb-phone-req">*</span>
+            <input type="tel" name="phone"></label>
+          <label class="f">Best way to reach them
+            <select name="contactPref"><option>Text</option><option>Phone call</option><option>Email</option></select></label>
+          <label class="f full">Street address <span class="req">*</span>
+            <input type="text" name="address" autocomplete="street-address"></label>
+          <label class="f">City / Town <span class="req">*</span>
+            <input type="text" name="town" autocomplete="address-level2"></label>
+          <label class="f">ZIP <span class="req">*</span>
+            <input type="text" name="zip" inputmode="numeric" autocomplete="postal-code" maxlength="10"></label>
+          <div class="area-note full" id="sb-area-note" hidden role="status"></div>
+        </div>
+      </fieldset>
+
+      <fieldset style="margin-top:22px">
+        <legend>Who's the visit for?</legend>
+        <p class="hint" style="margin:-6px 0 12px">First names and ages, so Santa knows who to say hi to.</p>
+        <div id="sb-kids"></div>
+        <button type="button" class="btn ghost small" id="sb-add-kid">+ Add another</button>
+        <label class="f" style="margin-top:14px">Anything Santa should know? <span class="hint">(optional: a hard year, a favorite thing, pets, best time of day)</span>
+          <textarea name="special"></textarea></label>
+      </fieldset>
+
+      <label class="choice" style="margin-top:18px">
+        <input type="checkbox" name="okVisit">
+        <div><b id="sb-ok-title">We'd love a Santa visit <span class="req">*</span></b>
+        <span id="sb-ok-text">Your address stays with the Kilted Santa team and is only used to plan Santa's stops.</span></div>
+      </label>
+
+      <div class="actions"><button class="btn" type="submit">🎅 Ask Santa to swing by</button></div>
+      <div class="msg err" role="alert"></div>
+    </form>
+  </section>
+
   <!-- ==================== VOLUNTEER ==================== -->
   <section class="panel" id="p-volunteer" role="tabpanel" aria-labelledby="tab-volunteer">
     <h2>Volunteer with us</h2>
@@ -490,7 +557,7 @@ const CONFIG = {
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw3hH_RCsag3kpqohxNVZVGdIiA2f-XzsBlO_8ovpJhGDgUurZkjYJiLKo7wMjt7ljufQ/exec",
 
   EYEBROW: "Christmas Eve deliveries · Jackson County",
-  INTRO: "Every Christmas Eve, a crew of kilted Santas drives the county delivering gifts to families who could use a little extra joy. Families sign up, neighbors adopt them, and volunteers make the magic happen.",
+  INTRO: "Every year right before Christmas, a crew of kilted Santas drives the county bringing gifts and good cheer to families who could use a little extra joy. Families sign up, neighbors adopt them, Santa swings by as many homes as he can, and volunteers make the magic happen.",
   FOOTER: "Questions? Reach out to Justin at The Kilted Farmers. Thank you for being someone's Christmas.",
 
   // ZIP codes the Santas can reach. Keep this list the same as SERVICE_ZIPS in the Google script.
@@ -576,7 +643,7 @@ async function send(payload) {
   if (DEMO) {
     await wait(600);
     if (payload.type === "adopt") demoAdopted.add(payload.familyId);
-    return { ok: true, familyNumber: "KS-0" + Math.floor(10 + Math.random() * 89) };
+    return { ok: true, familyNumber: "KS-0" + Math.floor(10 + Math.random() * 89), requestNumber: "SB-0" + Math.floor(10 + Math.random() * 89) };
   }
   const r = await fetch(CONFIG.SCRIPT_URL, {
     method: "POST",
@@ -930,6 +997,85 @@ $("#f-adopt").addEventListener("submit", async e => {
   }
 });
 
+/* ---------- SWING-BY ---------- */
+(function swingBy() {
+  const f = $("#f-swingby");
+  const kidsBox = $("#sb-kids");
+  function addRow(focus) {
+    const row = document.createElement("div");
+    row.className = "kidmini";
+    row.innerHTML = '<label class="f">First name<input type="text" data-k="name"></label>' +
+      '<label class="f">Age<input type="text" data-k="age" inputmode="numeric"></label>' +
+      '<button type="button" class="btn ghost small" aria-label="Remove">✕</button>';
+    $("button", row).addEventListener("click", () => { if (kidsBox.children.length > 1) row.remove(); });
+    kidsBox.append(row);
+    if (focus) $("input", row).focus();
+  }
+  addRow(false);
+  $("#sb-add-kid").addEventListener("click", () => addRow(true));
+
+  function mode() {
+    const someone = radio(f, "forWho") === "someone";
+    $("#sb-requester").hidden = !someone;
+    $("#sb-name-label").textContent = someone ? "The family's name" : "Your name";
+    $("#sb-phone-label").textContent = someone ? "The family's phone (if you have it)" : "Phone";
+    $("#sb-phone-req").hidden = someone;
+    $("#sb-ok-title").firstChild.textContent = someone ? "I'm sure this family would welcome a Santa visit " : "We'd love a Santa visit ";
+    $("#sb-ok-text").textContent = someone
+      ? "Please only ask for families you know would be happy to see Santa. Their address stays with the Kilted Santa team."
+      : "Your address stays with the Kilted Santa team and is only used to plan Santa's stops.";
+  }
+  f.querySelectorAll('input[name="forWho"]').forEach(r => r.addEventListener("change", mode));
+  mode();
+
+  const zip = f.elements.zip;
+  function zipNote() {
+    const z = zip.value.replace(/\D/g, "").slice(0, 5);
+    const note = $("#sb-area-note");
+    if (z.length < 5 || CONFIG.SERVICE_ZIPS.includes(z)) { note.hidden = true; return; }
+    note.textContent = "Heads up: that ZIP looks like it's outside " + CONFIG.SERVICE_AREA_NAME + ", so Santa may not be able to make it that far. You can still ask!";
+    note.hidden = false;
+  }
+  zip.addEventListener("blur", zipNote);
+  zip.addEventListener("input", () => { if (zip.value.replace(/\D/g, "").length >= 5) zipNote(); });
+
+  f.addEventListener("submit", e => {
+    e.preventDefault(); clearErr(f);
+    const someone = radio(f, "forWho") === "someone";
+    const kids = [...kidsBox.children].map(r => ({ name: $('[data-k="name"]', r).value.trim(), age: $('[data-k="age"]', r).value.trim() })).filter(k => k.name || k.age);
+    const missing = [];
+    if (someone && !val(f, "requester")) missing.push("your name");
+    if (!val(f, "name")) missing.push(someone ? "the family's name" : "your name");
+    if (!someone && !val(f, "phone")) missing.push("a phone number");
+    if (someone && !val(f, "phone") && !val(f, "requesterPhone")) missing.push("a phone number for you or the family");
+    if (!val(f, "address")) missing.push("the street address");
+    if (!val(f, "town")) missing.push("the city or town");
+    if (val(f, "zip").replace(/\D/g, "").length < 5) missing.push("the ZIP code");
+    if (!kids.length) missing.push("who the visit is for");
+    if (!f.elements.okVisit.checked) missing.push("the checkbox that the family would welcome a visit");
+    if (missing.length) return showErr(f, "Almost there! Please add " + missing.join(", ") + ".");
+
+    submitWith(f, "Sending…", {
+      type: "swingby", website: val(f, "website"), forWho: someone ? "someone" : "mine",
+      requester: val(f, "requester"), requesterPhone: val(f, "requesterPhone"),
+      name: val(f, "name"), phone: val(f, "phone"), contactPref: val(f, "contactPref"),
+      address: val(f, "address"), town: val(f, "town"), zip: val(f, "zip"),
+      kids, special: val(f, "special"), okVisit: true
+    }, res => {
+      const tag = document.createElement("div");
+      tag.className = "famno"; tag.textContent = "Request " + (res.requestNumber || "");
+      const lines = [
+        "Santa has your request! He looks at every one and fits in as many swing-bys as the sleigh can manage.",
+        "We can't promise a stop or a time, so keep an ear out for sleigh bells on Dec 23 and 24. 🔔"
+      ];
+      const z5 = val(f, "zip").replace(/\D/g, "").slice(0, 5);
+      if (res.inArea === false || (res.inArea === undefined && !CONFIG.SERVICE_ZIPS.includes(z5))) lines.push("Since that ZIP is outside " + CONFIG.SERVICE_AREA_NAME + ", Santa may not be able to make it that far.");
+      if (!someone) lines.push("If your family could use help with gifts this year, you can also sign up on the “Our family needs help” tab.");
+      success(f, "🎅", "Ho ho ho, request received!", lines, tag);
+    });
+  });
+})();
+
 /* ---------- VOLUNTEER ---------- */
 const rolesBox = $("#roles");
 ROLES.forEach(([name, desc]) => {
@@ -963,7 +1109,7 @@ $("#f-volunteer").addEventListener("submit", e => {
 
 /* ---------- open the right section from the link (runs last, once everything is set up) ---------- */
 if (deepFamily) showPanel("adopt", false);
-else if (["family", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
+else if (["family", "swingby", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
 </script>
 </body>
 </html>

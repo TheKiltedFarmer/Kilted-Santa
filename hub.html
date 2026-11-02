@@ -373,11 +373,14 @@ function ago(iso) {
 function kidsLine(f, withNames = true) {
   return f.kids.map(k => (withNames && k.name ? k.name : (k.gender || "Child")) + (k.age ? " (" + k.age + ")" : "")).join(", ");
 }
-function statusBadge(s) {
-  const cls = { "Pending review": "b-pending", "Available": "b-available", "Adopted": "b-adopted", "Delivered": "b-delivered", "Not listed": "b-hidden" }[s] || "b-hidden";
-  const label = { "Pending review": "Needs review", "Available": "Open for adoption" }[s] || s;
+function statusBadge(s, f) {
+  const swing = f && f.type === "Swing-by";
+  const cls = { "Pending review": "b-pending", "Available": "b-available", "Adopted": "b-adopted", "Swing-by request": "b-role", "Delivered": "b-delivered", "Not listed": "b-hidden" }[s] || "b-hidden";
+  const label = swing && s === "Delivered" ? "Visited ✅" : ({ "Pending review": "Needs review", "Available": "Open for adoption", "Swing-by request": "🎅 Swing-by request" }[s] || s);
   return h("span", { class: "badge " + cls, text: label });
 }
+const isSwing = f => f.type === "Swing-by";
+const famLabel = f => (isSwing(f) ? "Swing-by " : "Family ") + f.id;
 function telLinks(phone, email, name) {
   const p = String(phone || "").replace(/[^\d+]/g, "");
   return h("span", { class: "row" },
@@ -451,7 +454,8 @@ function viewHome() {
     "ELF": "You're an ELF: grab a task, move gifts along, and team up with the crew."
   }[me.role];
   const stats = h("div", { class: "stats" },
-    stat(F.length, "families signed up", () => go("families", { famFilter: "all" })),
+    stat(F.filter(f => !isSwing(f)).length, "families signed up", () => go("families", { famFilter: "all" })),
+    stat(by("Swing-by request"), "swing-by requests 🎅", () => go("routes")),
     me.isAdopt ? stat(by("Pending review"), "need review", () => go("families", { famFilter: "Pending review" }), by("Pending review") > 0) : null,
     stat(by("Available"), "waiting for an adopter", () => go("families", { famFilter: "Available" })),
     stat(by("Adopted"), "adopted", () => go("families", { famFilter: "Adopted" })),
@@ -494,6 +498,8 @@ function waysToHelp() {
     items.push(["📣", "Share Family " + f.id + "'s story so they find an adopter", kidsLine(f), "Get the post", () => go("stories")]));
   const randomLeft = F.filter(f => f.status === "Available" && !f.team).length;
   if (me.isLead && randomLeft) items.push(["🎲", randomLeft + " famil" + (randomLeft === 1 ? "y isn't" : "ies aren't") + " adopted yet", "Share their stories, or plan them as random deliveries", "Routes", () => go("routes")]);
+  if (me.isAdopt) F.filter(f => f.status === "Swing-by request" && !f.team).slice(0, 2).forEach(f =>
+    items.push(["🎅", "Plan swing-by " + f.id, kidsLine(f) + (f.town ? " · " + f.town : ""), "Plan", () => go("routes")]));
   if (me.isAdopt) F.filter(f => f.status === "Adopted" && !f.team).slice(0, 3).forEach(f =>
     items.push(["🛷", "Put Family " + f.id + " on a Christmas Eve route", f.town, "Plan", () => go("routes")]));
   if (me.isAdopt) F.filter(f => f.status === "Adopted" && f.gift === "Not started" && !f.handledBy).slice(0, 3).forEach(f =>
@@ -587,7 +593,7 @@ function viewFamilies() {
   if (!ui.famFilter) ui.famFilter = me.isAdopt && F.some(f => f.status === "Pending review") ? "Pending review" : "all";
   const filters = [
     me.isAdopt ? ["Pending review", "Needs review"] : null,
-    ["Available", "Open for adoption"], ["Adopted", "Adopted"], ["Delivered", "Delivered"], ["all", "All"]
+    ["Available", "Open for adoption"], ["Adopted", "Adopted"], ["Swing-by request", "Swing-bys"], ["Delivered", "Delivered / visited"], ["all", "All"]
   ].filter(Boolean);
   const q = ui.famSearch.trim().toLowerCase();
   let list = F.filter(f => ui.famFilter === "all" || f.status === ui.famFilter);
@@ -609,14 +615,15 @@ function famCard(f) {
   return h("div", { class: "card fam", id: "fam-" + f.id },
     h("button", { class: "fam-head", "aria-expanded": String(isOpen), onclick: toggle },
       h("div", { class: "grow" },
-        h("div", { class: "row" }, h("h3", { text: "Family " + f.id }), statusBadge(f.status),
-          f.status !== "Pending review" && f.status !== "Available" && f.status !== "Delivered" ? h("span", { class: "badge b-role", text: "🎁 " + f.gift }) : null,
+        h("div", { class: "row" }, h("h3", { text: famLabel(f) }), statusBadge(f.status, f),
+          !isSwing(f) && f.status !== "Pending review" && f.status !== "Available" && f.status !== "Delivered" ? h("span", { class: "badge b-role", text: "🎁 " + f.gift }) : null,
           f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null),
         h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") + (f.handledBy ? " · handled by " + firstName(f.handledBy) : "") })),
       h("span", { "aria-hidden": "true", style: "font-size:20px", text: isOpen ? "▴" : "▾" })),
     isOpen ? famBody(f) : null);
 }
 function famBody(f) {
+  if (isSwing(f)) return swingBody(f);
   const body = h("div", { class: "fam-body stack" });
 
   // Adoption desk actions
@@ -731,12 +738,12 @@ function routeEditor(f) {
     h("input", { type: "text", name: "team", value: f.team, list: "team-list", placeholder: "Santa team", style: "width:auto;flex:1 1 140px" }),
     h("input", { type: "text", name: "stop", value: f.stop, inputmode: "numeric", placeholder: "Stop #", style: "width:80px" }),
     h("button", { class: "btn sm", type: "submit" }, "Save"),
-    f.status === "Available" && (f.team || "").toLowerCase() !== S.randomRoute.toLowerCase()
+    (f.status === "Available" || f.status === "Swing-by request") && (f.team || "").toLowerCase() !== S.randomRoute.toLowerCase()
       ? h("button", { class: "btn ghost sm", type: "button", onclick: e => act(e.currentTarget, "fam_route", { familyId: f.id, team: S.randomRoute, stop: "" }) }, "🎲 Put on " + S.randomRoute) : null,
     h("datalist", { id: "team-list" }, teams.map(t => h("option", { value: t }))));
-  if (f.status === "Available") {
+  if (f.status === "Available" || f.status === "Swing-by request") {
     const willing = S.crew.filter(c => c.randomOk && c.access === "Approved" && c.team).map(c => c.team);
-    return h("div", { class: "stack" }, form, h("div", { class: "tiny muted", text: "🎲 Not adopted. Teams with a Santa OK for random deliveries: " + ([...new Set(willing)].join(", ") || "none yet") }));
+    return h("div", { class: "stack" }, form, h("div", { class: "tiny muted", text: (isSwing(f) ? "🎲 Swing-by." : "🎲 Not adopted.") + " Teams with a Santa OK for random stops: " + ([...new Set(willing)].join(", ") || "none yet") }));
   }
   return form;
 }
@@ -765,12 +772,84 @@ async function viewFile(btn, familyId, which) {
   } catch (e) {} finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = old; } }
 }
 
+/* ================= SWING-BYS ================= */
+function swingBody(f) {
+  const body = h("div", { class: "fam-body stack" });
+  body.append(h("div", { class: "banner", text: "🎅 A swing-by request: a quick Santa stop if the sleigh can fit it in. No promises, no adoption needed." }));
+  if (f.inArea && f.inArea !== "Yes") body.append(h("div", { class: "banner", text: "⚠️ ZIP " + (f.zip || "") + " is outside " + S.serviceArea + "." }));
+  body.append(h("div", { class: "block" }, h("h4", null, "The visit is for"),
+    f.kids.map(k => h("div", { class: "kid" }, h("b", { text: (k.name || "Someone") + (k.age ? ", " + k.age : "") })))));
+  if (f.private) {
+    body.append(h("div", { class: "block private" }, h("h4", null, "🔒 Private: adoption team" + (me.isAdopt ? "" : " & your Santa team")),
+      h("dl", { class: "kv" },
+        h("dt", null, "Name"), h("dd", { text: f.parent || "—" }),
+        h("dt", null, "Phone"), h("dd", null, f.phone || "—", f.contactPref ? h("span", { class: "muted", text: " (prefers " + f.contactPref.toLowerCase() + ")" }) : null),
+        h("dt", null, "Address"), h("dd", null, (f.address || "—") + (f.town ? ", " + f.town : "") + (f.zip ? " " + f.zip : ""),
+          f.address ? h("div", null, h("a", { href: "https://maps.google.com/?q=" + encodeURIComponent(f.address + ", " + f.town + " MI " + (f.zip || "")), target: "_blank", rel: "noopener" }, "Open in Maps")) : null),
+        h("dt", null, "Asked by"), h("dd", { text: f.requestedBy || "—" }),
+        f.swingNotes ? [h("dt", null, "Notes"), h("dd", { text: f.swingNotes })] : null),
+      h("div", { style: "margin-top:8px" }, telLinks(f.phone, f.email))));
+  }
+  if (me.isAdopt) body.append(h("div", { class: "row" }, h("label", { class: "f grow" }, "Status",
+    h("select", { onchange: e => act(null, "fam_status", { familyId: f.id, status: e.target.value }) },
+      [["Swing-by request", "Swing-by request"], ["Delivered", "Visited"], ["Not listed", "Can't make it / not listed"]].map(([v, l]) => opt(v, l, v === f.status))))));
+  body.append(routeEditor(f));
+  const noteForm = h("form", { class: "row", onsubmit: async e => {
+      e.preventDefault(); const inp = $("input", noteForm); if (!inp.value.trim()) return;
+      const r = await act($("button", noteForm), "fam_note", { familyId: f.id, note: inp.value }); if (r) inp.value = "";
+    } },
+    h("input", { type: "text", style: "width:auto;flex:1", maxlength: 500, placeholder: "Add a note for the crew…" }),
+    h("button", { class: "btn sm", type: "submit" }, "Add"));
+  body.append(h("div", { class: "block" }, h("h4", null, "Crew notes"),
+    f.teamNotes ? h("div", { class: "notes", text: f.teamNotes }) : h("div", { class: "small muted", text: "No notes yet." }),
+    h("div", { style: "margin-top:8px" }, noteForm)));
+  body.append(h("div", { class: "tiny muted", style: "text-align:right", text: "Requested " + ago(f.submitted) }));
+  return body;
+}
+function addSwingDialog() {
+  let close;
+  const kidRow = () => h("div", { class: "grid2", style: "grid-template-columns:1fr 90px" },
+    h("input", { type: "text", "data-k": "name", placeholder: "First name" }), h("input", { type: "text", "data-k": "age", placeholder: "Age", inputmode: "numeric" }));
+  const kids = h("div", { class: "stack" }, kidRow(), kidRow(), kidRow());
+  const err = h("div", { class: "banner hidden", role: "alert" });
+  const form = h("form", { class: "stack", onsubmit: async e => {
+      e.preventDefault(); err.classList.add("hidden");
+      const fd = new FormData(form);
+      const list = [...kids.children].map(r => ({ name: $('[data-k="name"]', r).value.trim(), age: $('[data-k="age"]', r).value.trim() })).filter(k => k.name || k.age);
+      const btn = $("button[type=submit]", form); btn.disabled = true; btn.textContent = "Adding…";
+      try {
+        await api("swing_add", { name: fd.get("name"), phone: fd.get("phone"), address: fd.get("address"), town: fd.get("town"), zip: fd.get("zip"),
+          contactPref: fd.get("contactPref"), source: fd.get("source"), special: fd.get("special"), kids: list }, true);
+        close(); toast("Swing-by added 🎅");
+      } catch (ex) {
+        err.textContent = (ex && ex.message) || "That didn't save. Please try again."; err.classList.remove("hidden");
+        btn.disabled = false; btn.textContent = "Add swing-by";
+      }
+    } },
+    h("h3", null, "Add a swing-by"),
+    h("p", { class: "small muted", style: "margin:0" }, "For requests that came in on Facebook, by phone, or families Santa remembers."),
+    h("div", { class: "grid2" },
+      h("label", { class: "f full" }, "Family name", h("input", { type: "text", name: "name", required: true })),
+      h("label", { class: "f" }, "Phone", h("input", { type: "tel", name: "phone" })),
+      h("label", { class: "f" }, "Best way to reach", h("select", { name: "contactPref" }, opt("Text"), opt("Phone call"), opt("Facebook message"))),
+      h("label", { class: "f full" }, "Street address", h("input", { type: "text", name: "address", required: true })),
+      h("label", { class: "f" }, "City / Town", h("input", { type: "text", name: "town", required: true })),
+      h("label", { class: "f" }, "ZIP", h("input", { type: "text", name: "zip", inputmode: "numeric" })),
+      h("label", { class: "f full" }, "Where did it come from?", h("select", { name: "source" },
+        opt("Facebook message"), opt("Phone call or text"), opt("Santa remembers them"), opt("Word of mouth"), opt("Other")))),
+    h("div", null, h("b", { class: "small" }, "Who's the visit for? (first names & ages)"), h("div", { style: "margin-top:6px" }, kids)),
+    h("label", { class: "f" }, "Notes (optional)", h("textarea", { name: "special", maxlength: 800, placeholder: "Anything Santa should know" })),
+    h("button", { class: "btn", type: "submit" }, "Add swing-by"), err);
+  close = modal(form);
+}
+
 /* ================= ROUTES ================= */
 function viewRoutes() {
   const teams = teamNames();
-  const active = S.families.filter(f => ["Adopted", "Available", "Delivered"].includes(f.status));
+  const active = S.families.filter(f => ["Adopted", "Available", "Swing-by request", "Delivered"].includes(f.status));
   const unassignedAdopted = active.filter(f => !f.team && f.status === "Adopted");
   const unassignedRandom = active.filter(f => !f.team && f.status === "Available");
+  const unassignedSwing = active.filter(f => !f.team && f.status === "Swing-by request");
   const meCrew = S.crew.find(c => c.row === me.row) || {};
   const myTeam = (me.team || "").trim();
   const ordered = myTeam ? [myTeam, ...teams.filter(t => t.toLowerCase() !== myTeam.toLowerCase())] : teams;
@@ -785,17 +864,20 @@ function viewRoutes() {
       h("button", { class: "btn sm", type: "submit" }, "Save"),
       h("datalist", { id: "team-list-2" }, teams.map(t => h("option", { value: t })))),
     h("label", { class: "row small" }, h("input", { type: "checkbox", checked: meCrew.randomOk, style: "width:18px;height:18px;accent-color:var(--green)" }),
-      "🎲 I'm comfortable doing random deliveries too (families nobody adopted)"));
+      "🎲 I'm comfortable doing random stops too (swing-bys and families nobody adopted)"));
 
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Christmas Eve routes")),
-    h("div", { class: "banner" }, "We plan the Santas around the adoptions. Each Santa team sees the addresses for its own stops as soon as they're assigned. Families nobody adopted go on " + S.randomRoute + " unless a Santa has said they're OK with random deliveries 🎲."),
+    h("div", { class: "banner" }, "We plan the Santas around the adoptions. Each Santa team sees the addresses for its own stops as soon as they're assigned. Swing-bys and families nobody adopted are random stops 🎲: they go on " + S.randomRoute + " unless a Santa has said they're OK with random stops, and none of them are promised."),
+    me.isAdopt ? h("div", { class: "row" }, h("button", { class: "btn gold", onclick: addSwingDialog }, "🎅 + Add a swing-by (from Facebook or a call)")) : null,
     h("div", { class: "card" }, selfForm),
     ordered.length ? ordered.map(t => teamCard(t, active.filter(f => (f.team || "").trim().toLowerCase() === t.toLowerCase())))
       : h("div", { class: "card empty", text: "No Santa teams yet. Give yourself a team name above, or an Adoption ELF can put families on routes." }),
     unassignedList("Adopted, needs a Santa (" + unassignedAdopted.length + ")", unassignedAdopted),
     unassignedList("Not adopted: random deliveries (" + unassignedRandom.length + ")", unassignedRandom,
-      "Nobody has adopted these families yet. They go on " + S.randomRoute + " unless a Santa who's OK with random deliveries takes them."));
+      "Nobody has adopted these families yet. They go on " + S.randomRoute + " unless a Santa who's OK with random deliveries takes them."),
+    unassignedList("Swing-by requests (" + unassignedSwing.length + ")", unassignedSwing,
+      "Families who'd love a quick Santa visit. No promises: fit in what the sleigh can manage. They go on " + S.randomRoute + " unless a Santa who's OK with random stops takes them."));
 }
 function unassignedList(title, list, note) {
   if (!list.length) return null;
@@ -803,7 +885,9 @@ function unassignedList(title, list, note) {
     h("div", { class: "section-title" }, h("h2", null, title)),
     note ? h("p", { class: "small muted", style: "margin:-4px 0 10px", text: note }) : null,
     h("div", { class: "stack" }, list.map(f => h("div", { class: "card" },
-      h("div", { class: "row" }, h("b", { text: "Family " + f.id }), statusBadge(f.status), h("span", { class: "small muted", text: kidsLine(f) + (f.town ? " · " + f.town : "") })),
+      h("div", { class: "row" }, h("b", { text: famLabel(f) }), statusBadge(f.status, f), h("span", { class: "small muted", text: kidsLine(f) + (f.town ? " · " + f.town : "") }),
+        f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null),
+      f.private && f.swingNotes ? h("div", { class: "small", style: "margin-top:4px", text: "📝 " + f.swingNotes }) : null,
       me.isAdopt ? h("div", { style: "margin-top:8px" }, routeEditor(f)) : null))));
 }
 function teamCard(team, stops) {
@@ -811,22 +895,25 @@ function teamCard(team, stops) {
   const members = S.crew.filter(c => (c.team || "").trim().toLowerCase() === team.toLowerCase() && c.access === "Approved");
   const mineTeam = (me.team || "").trim().toLowerCase() === team.toLowerCase();
   const done = stops.filter(f => f.status === "Delivered").length;
+  const nSwing = stops.filter(isSwing).length;
   return h("div", { class: "card stack", style: mineTeam ? "border:2px solid var(--green)" : "" },
     h("div", { class: "row" }, h("h3", { style: "font-size:20px", text: "🛷 " + team }), mineTeam ? h("span", { class: "badge b-adopted", text: "Your team" }) : null,
-      h("span", { class: "small muted", style: "margin-left:auto", text: done + " of " + stops.length + " delivered" })),
+      h("span", { class: "small muted", style: "margin-left:auto", text: done + " of " + stops.length + " done" + (nSwing ? " · " + nSwing + " swing-by" + (nSwing > 1 ? "s" : "") : "") })),
     h("div", { class: "small" }, h("b", null, "Crew: "), members.length ? members.map(c => firstName(c.name) + (c.wants && /santa/i.test(c.wants) ? " 🎅" : "") + (c.randomOk ? " 🎲" : "")).join(", ") : "nobody yet"),
     stops.length ? stops.map(f => h("div", { class: "block" },
       h("div", { class: "row" },
-        h("b", { text: (f.stop ? "Stop " + f.stop + " · " : "") + "Family " + f.id }), statusBadge(f.status), h("span", { class: "badge b-role", text: "🎁 " + f.gift }),
+        h("b", { text: (f.stop ? "Stop " + f.stop + " · " : "") + famLabel(f) }), statusBadge(f.status, f),
+        isSwing(f) ? null : h("span", { class: "badge b-role", text: "🎁 " + f.gift }),
         f.status === "Available" ? h("span", { class: "badge b-red", text: "🎲 Random delivery" }) : null),
       h("div", { class: "small", style: "margin-top:4px", text: kidsLine(f) }),
       f.santaVisit ? h("div", { class: "small muted", text: "🎅 " + f.santaVisit }) : null,
       f.address ? h("div", { class: "small", style: "margin-top:4px" }, "📍 " + f.address + ", " + f.town + " ",
         h("a", { href: "https://maps.google.com/?q=" + encodeURIComponent(f.address + ", " + f.town + " MI " + (f.zip || "")), target: "_blank", rel: "noopener" }, "Directions")) : h("div", { class: "small muted", text: f.town ? "📍 " + f.town : "" }),
       f.privateNotes && f.private ? h("div", { class: "small", text: "📝 " + f.privateNotes }) : null,
+      f.swingNotes && f.private ? h("div", { class: "small", text: "📝 " + f.swingNotes }) : null,
       (mineTeam || me.isAdopt) ? h("div", { style: "margin-top:8px" }, f.status === "Delivered"
-        ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id, undo: true }) }, "Undo delivered")
-        : h("button", { class: "btn red sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id }) }, "🎅 Delivered!")) : null))
+        ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id, undo: true }) }, "Undo")
+        : h("button", { class: "btn red sm", onclick: e => act(e.currentTarget, "fam_delivered", { familyId: f.id }) }, isSwing(f) ? "🎅 Swung by!" : "🎅 Delivered!")) : null))
       : h("div", { class: "small muted", text: "No stops assigned yet." }));
 }
 
@@ -965,7 +1052,7 @@ function storyPost(f) {
   return lines.join("\n");
 }
 function viewStories() {
-  const ok = S.families.filter(f => /^(Yes|Story only)/.test(f.share) && f.status !== "Pending review" && f.status !== "Not listed");
+  const ok = S.families.filter(f => !isSwing(f) && /^(Yes|Story only)/.test(f.share) && f.status !== "Pending review" && f.status !== "Not listed");
   const list = ui.storiesAll ? ok : ok.filter(f => f.status === "Available");
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Story posts")),
