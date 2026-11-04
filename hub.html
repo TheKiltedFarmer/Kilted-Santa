@@ -267,7 +267,8 @@
 /* ===================== CONFIG ===================== */
 const CONFIG = {
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw3hH_RCsag3kpqohxNVZVGdIiA2f-XzsBlO_8ovpJhGDgUurZkjYJiLKo7wMjt7ljufQ/exec",
-  REFRESH_SECONDS: 60
+  REFRESH_SECONDS: 60,
+  GOFUNDME: "https://gofund.me/4cf21e0cc"
 };
 /* ================================================== */
 
@@ -495,6 +496,7 @@ function viewHome() {
       h("p", { class: "muted", style: "margin:6px 0 0" }, roleLine),
       h("div", { class: "row", style: "margin-top:10px" }, h("a", { class: "btn ghost sm", href: "guide.html" }, "📖 ELF Guide: how the hub works & ways to help"))),
     stats,
+    gfmCard(true),
     h("div", { class: "section-title" }, h("h2", null, "Ways to help right now"), h("button", { class: "btn sm gold", onclick: () => go("tasks", { newTask: {} }) }, "+ Post a task")),
     h("div", { class: "card" }, waysToHelp()),
     mine.length ? h("div", null,
@@ -1225,6 +1227,7 @@ function viewStories() {
   const list = ui.storiesAll ? ok : ok.filter(f => f.status === "Available");
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Story posts")),
+    gfmCard(false),
     h("div", { class: "banner" }, "Ready to copy and post. These only include families who said yes, with kids' first names and ages, never photos, last names or addresses. Each post links straight to that family's Adopt page."),
     h("div", { class: "chips" },
       h("button", { class: "chip", "aria-pressed": String(!ui.storiesAll), onclick: () => { ui.storiesAll = false; render(); } }, "Still need an adopter (" + ok.filter(f => f.status === "Available").length + ")"),
@@ -1239,6 +1242,29 @@ function viewStories() {
           h("button", { class: "btn ghost sm", onclick: () => copyText(adoptLink(f.id)) }, "🔗 Copy link only"),
           f.status !== "Available" ? h("span", { class: "small muted", text: "Already " + f.status.toLowerCase() + ". Post a thank-you instead!" }) : null));
     }) : h("div", { class: "card empty", text: "No stories ready yet. Once an Adoption ELF approves a family who said yes to sharing, their post shows up here." }));
+}
+
+/* ================= GOFUNDME ================= */
+function gfmPost() {
+  return "🎅 Help fill Santa's sleigh!\n\nEvery year, the Kilted Santa Project brings Christmas to local families in Jackson County, delivered right to their door by Santas in kilts. Every dollar helps.\n\nGive here: " + CONFIG.GOFUNDME + "\n\n#KiltedSantaProject #KiltedSanta";
+}
+async function shareGfm() {
+  if (navigator.share) {
+    try { await navigator.share({ title: "Help fill Santa's sleigh", text: gfmPost().replace(CONFIG.GOFUNDME, "").trim(), url: CONFIG.GOFUNDME }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  copyText(gfmPost());
+}
+function gfmCard(compact) {
+  return h("div", { class: "card stack", style: "border:2px solid var(--gold);background:linear-gradient(135deg,#fff,#fbf1d8)" },
+    h("div", { class: "row" }, h("h3", { style: "font-size:20px", text: "💝 Share the GoFundMe" }),
+      h("a", { class: "small", style: "margin-left:auto", href: CONFIG.GOFUNDME, target: "_blank", rel: "noopener" }, "gofund.me/4cf21e0cc")),
+    compact ? null : h("div", { class: "story-box", text: gfmPost() }),
+    h("div", { class: "row" },
+      h("button", { class: "btn red", onclick: shareGfm }, "📤 Share"),
+      h("button", { class: "btn ghost sm", onclick: () => copyText(gfmPost()) }, "📋 Copy post"),
+      h("button", { class: "btn ghost sm", onclick: () => copyText(CONFIG.GOFUNDME) }, "🔗 Copy link"),
+      h("button", { class: "btn ghost sm", onclick: openPrintables }, "🖨️ Print QR flyer")));
 }
 
 /* ================= PRINTABLES ================= */
@@ -1295,6 +1321,7 @@ function viewPrint() {
     h("div", { class: "card stack", style: "background:linear-gradient(135deg,#fff,#fdf6e6)" },
       h("h3", { style: "font-size:20px" }, "🏪 Business outreach kit"),
       h("p", { style: "margin:0" }, "Everything you need to ask a local business to help: a letter that explains the project, sign-up cards they fill out, and a window sign and box labels for drop-off spots. Your name and phone print on the letter."),
+      h("p", { style: "margin:0" }, "💝 Also in there: a GoFundMe flyer with a big QR code, and little QR cards (4 per page) to leave by a register. The letter and window sign have the GoFundMe QR code too."),
       h("div", { class: "row" }, h("button", { class: "btn", onclick: openPrintables }, "🖨️ Open the printables"))),
     form,
     h("div", { class: "section-title" }, h("h2", null, "Businesses helping (" + bizTasks.length + ")")),
