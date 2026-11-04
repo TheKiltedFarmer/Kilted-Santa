@@ -714,6 +714,8 @@ function famBody(f) {
           h("dt", null, "Gifts"), h("dd", { text: f.giftPlan || "—" }),
           f.adopterNotes ? [h("dt", null, "Notes"), h("dd", { text: f.adopterNotes })] : null),
         h("div", { class: "row", style: "margin-top:8px" }, telLinks(f.adopterPhone, f.adopterEmail),
+          f.adopterEmail ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_sendlist", { familyId: f.id }) }, "✉️ Email wish list to adopter")
+            : h("button", { class: "btn ghost sm", onclick: () => copyText("Here's Family " + f.id + "'s wish list anytime: " + S.publicUrl + "#mylist (enter " + f.id + " and the phone number you adopted with)") }, "📋 Copy wish-list link to text"),
           h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Release?")) act(e.currentTarget, "fam_release", { familyId: f.id }); } }, "Release back to Adopt page"))));
     } else if (f.status === "Available") {
       const form = h("form", { class: "block stack", onsubmit: async e => {

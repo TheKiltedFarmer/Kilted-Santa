@@ -223,6 +223,17 @@
   .drop .thumb { margin-left: auto; width: 56px; height: 56px; object-fit: cover; border-radius: 10px; flex: none; }
   .area-note { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--gold); font-size: 15px; }
 
+  .mylist-card { margin-bottom: 18px; padding: 14px 16px; }
+  .mylist-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .wishlist { text-align: left; margin: 18px auto 0; max-width: 560px; border: 2px solid var(--gold); border-radius: 14px; padding: 16px; background: var(--surface); }
+  .wishlist h3 { font-size: 20px; margin-bottom: 6px; }
+  #print-area { display: none; }
+  @media print {
+    body[data-printing="list"] > *:not(#print-area) { display: none !important; }
+    body[data-printing="list"] #print-area { display: block !important; }
+    body[data-printing="list"] .no-print { display: none !important; }
+    body[data-printing="list"] .wishlist { border: 0; max-width: none; }
+  }
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
   footer { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 30px 0 50px; }
@@ -378,6 +389,22 @@
   <section class="panel" id="p-adopt" role="tabpanel" aria-labelledby="tab-adopt">
     <h2>Adopt a family</h2>
     <p class="lead">Each family below is waiting on a Christmas angel. Pick one, tell us how you'd like to connect, and we'll take it from there.</p>
+
+    <div class="card mylist-card" id="mylist">
+      <div class="mylist-top">
+        <span><b>Already adopted a family?</b> See their wish list again anytime.</span>
+        <button class="btn ghost small" type="button" id="mylist-open">🎁 See my family's wish list</button>
+      </div>
+      <form id="f-mylist" novalidate hidden style="margin-top:12px">
+        <div class="grid">
+          <label class="f">Family number<input type="text" name="familyId" placeholder="e.g. KS-004" autocapitalize="characters"></label>
+          <label class="f">The email or phone you used<input type="text" name="contact" autocomplete="email"></label>
+        </div>
+        <div class="actions" style="margin-top:12px"><button class="btn" type="submit">Show the wish list</button></div>
+        <div class="msg err" role="alert"></div>
+      </form>
+      <div id="mylist-result"></div>
+    </div>
 
     <div id="adopt-list">
       <div class="filters" role="group" aria-label="Filter families">
@@ -972,6 +999,8 @@ $("#f-adopt").addEventListener("submit", async e => {
     return showErr(f, "Delivering yourself needs a direct connection with the family. Choose “Directly with the family” or let Santa deliver.");
 
   const id = picked.id;
+  const chosen = picked;
+  const adopterEmail = val(f, "email");
   const res = await submitWith(f, "Saving…", {
     type: "adopt", website: val(f, "website"), familyId: id,
     name: val(f, "name"), phone: val(f, "phone"), email: val(f, "email"),
@@ -990,12 +1019,69 @@ $("#f-adopt").addEventListener("submit", async e => {
       "You just made someone's Christmas."
     ], wrap);
     const s = document.querySelector("#p-adopt .success");
-    if (s) { const a = el("div", "actions"); a.style.justifyContent = "center"; a.append(again); s.append(a); }
+    if (s) {
+      s.append(wishListNode(chosen, [
+        adopterEmail ? "We also emailed this list to " + adopterEmail + "." : "Tip: print it or take a screenshot so you have it while you shop.",
+        "Need it again later? Tap “See my family's wish list” on the Adopt tab and enter Family " + id + " with the email or phone you just used."
+      ]));
+      const a = el("div", "actions"); a.style.justifyContent = "center"; a.append(again); s.append(a);
+    }
   });
   if (res && res.taken) {
     families = families.filter(x => x.id !== id);
     setTimeout(() => backToList(true), 1800);
   }
+});
+
+/* ---------- wish list for adopters (on success, and "Already adopted?") ---------- */
+function wishListNode(f, extraLines) {
+  const box = el("div", "wishlist");
+  box.append(el("h3", null, "Family " + f.id + "'s wish list"));
+  f.kids.forEach(k => {
+    const r = el("div", "kidrow");
+    r.append(el("div", "who", kidLabel(k)));
+    const sizes = [k.clothing && "Clothing " + k.clothing, k.shoe && "Shoe " + k.shoe].filter(Boolean).join(" · ");
+    if (sizes) r.append(el("div", "sizes", sizes));
+    if (k.wishes) { const w = el("div", "w"); w.append(el("b", null, "Wishes: ")); w.append(document.createTextNode(k.wishes)); r.append(w); }
+    if (k.likes) r.append(el("div", "w sizes", "Loves: " + k.likes));
+    box.append(r);
+  });
+  if (f.household) { const hh = el("div", "household"); hh.append(el("b", null, "For the household: ")); hh.append(document.createTextNode(f.household)); box.append(hh); }
+  if (f.story) box.append(el("div", "story", "“" + f.story + "”"));
+  (extraLines || []).forEach(t => box.append(el("p", "hint", t)));
+  const acts = el("div", "actions no-print");
+  const pr = el("button", "btn ghost small", "🖨️ Print or save this list"); pr.type = "button";
+  pr.addEventListener("click", () => printList(box));
+  acts.append(pr); box.append(acts);
+  return box;
+}
+function printList(node) {
+  const area = document.getElementById("print-area") || document.body.appendChild(Object.assign(document.createElement("div"), { id: "print-area" }));
+  area.replaceChildren(node.cloneNode(true));
+  document.body.dataset.printing = "list";
+  setTimeout(() => window.print(), 50);
+}
+window.addEventListener("afterprint", () => { delete document.body.dataset.printing; });
+
+$("#mylist-open").addEventListener("click", () => {
+  const f = $("#f-mylist"); f.hidden = !f.hidden;
+  if (!f.hidden) f.elements.familyId.focus();
+});
+$("#f-mylist").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target; clearErr(f);
+  const familyId = val(f, "familyId"), contact = val(f, "contact");
+  if (!familyId || !contact) return showErr(f, "Please enter your family number and the email or phone you used when you adopted.");
+  const btn = $("button[type=submit]", f); btn.disabled = true; btn.textContent = "Looking…";
+  try {
+    let res;
+    if (DEMO) { await wait(400); const d = DEMO_FAMILIES.find(x => x.id.toLowerCase() === familyId.toLowerCase().replace(/^ks(?!-)/, "ks-")); res = d ? { ok: true, family: d } : { ok: false, error: "We couldn't find that family with that email or phone." }; }
+    else res = await send({ type: "mylist", familyId, contact });
+    if (!res || !res.ok) return showErr(f, (res && res.error) || "Something went wrong. Please try again.");
+    f.hidden = true;
+    $("#mylist-result").replaceChildren(wishListNode(res.family, ["Questions about sizes or drop-off? Reach out to the Kilted Santa team anytime."]));
+  } catch (err) { showErr(f, "We couldn't reach the sign-up sheet. Check your connection and try again."); }
+  finally { btn.disabled = false; btn.textContent = "Show the wish list"; }
 });
 
 /* ---------- SWING-BY ---------- */
@@ -1109,7 +1195,8 @@ $("#f-volunteer").addEventListener("submit", e => {
 });
 
 /* ---------- open the right section from the link (runs last, once everything is set up) ---------- */
-if (deepFamily) showPanel("adopt", false);
+if (startHash === "mylist") { showPanel("adopt", false); $("#f-mylist").hidden = false; setTimeout(() => $("#mylist").scrollIntoView({ block: "start" }), 50); }
+else if (deepFamily) showPanel("adopt", false);
 else if (["family", "swingby", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
 </script>
 </body>
