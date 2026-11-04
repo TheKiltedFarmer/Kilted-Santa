@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light only">
+<meta name="theme-color" content="#d23a3f">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The ELF Guide</title>
+<meta name="description" content="How to use Santa's Operations Hub, and what each Kilted Santa volunteer role involves.">
+<link rel="icon" href="data:image/jpeg;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfdfb;
+    --snow: #eef6f0;
+    --surface: #ffffff;
+    --surface-2: #fdf6e6;
+    --ink: #24302a;
+    --ink-soft: #5c6b62;
+    --line: #dfe9e2;
+    --red: #c8323a;
+    --red-soft: #fdeaea;
+    --green: #24682f;
+    --green-bright: #3a9a4a;
+    --green-soft: #e4f3e7;
+    --gold: #d9a93a;
+    --gold-soft: #fbf1d8;
+    --shadow: 0 1px 2px rgba(36,104,47,.06), 0 8px 24px rgba(36,104,47,.08);
+    color-scheme: light only;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: var(--bg); scroll-behavior: smooth; scroll-padding-top: 64px; }
+  body { margin: 0; color: var(--ink); background: linear-gradient(180deg, var(--snow) 0, var(--bg) 420px) var(--bg); font: 17px/1.6 "Nunito", system-ui, -apple-system, sans-serif; }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, serif; line-height: 1.15; margin: 0; color: var(--green); }
+  a { color: var(--green); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+  .tartan {
+    height: 10px;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 14px, rgba(36,104,47,.75) 14px 24px, transparent 24px 30px, rgba(255,255,255,.85) 30px 31px, transparent 31px 44px),
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(36,104,47,.55) 3px 7px, transparent 7px 12px),
+      #d23a3f;
+  }
+  header.hero { text-align: center; padding: 26px 0 8px; }
+  header.hero img { width: 120px; height: 120px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px #fff, 0 0 0 7px rgba(217,169,58,.55), 0 14px 34px rgba(36,104,47,.16); }
+  header.hero h1 { font-size: clamp(32px, 7vw, 46px); margin-top: 14px; }
+  header.hero .elves { color: var(--ink-soft); margin: 6px 0 0; }
+  header.hero .elves b { color: var(--red); }
+  .backbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; font-weight: 700; font-size: 14.5px; }
+
+  nav.toc { position: sticky; top: 0; z-index: 10; background: rgba(251,253,251,.95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); margin-top: 16px; }
+  nav.toc .wrap { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-top: 8px; padding-bottom: 8px; }
+  nav.toc .wrap::-webkit-scrollbar { display: none; }
+  nav.toc a { flex: none; text-decoration: none; font-weight: 800; font-size: 14px; color: var(--ink); border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; }
+  nav.toc a:hover { border-color: var(--green-bright); }
+
+  main { padding: 10px 0 70px; }
+  section { padding-top: 26px; }
+  section > h2 { font-size: 28px; margin-bottom: 8px; }
+  section > p.intro { color: var(--ink-soft); margin: 0 0 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 16px 18px; }
+  .stack > * + * { margin-top: 12px; }
+  .card h3 { font-size: 20px; margin-bottom: 6px; }
+  .card p { margin: 6px 0; }
+  ul.tight, ol.tight { margin: 6px 0; padding-left: 22px; }
+  ul.tight li + li, ol.tight li + li { margin-top: 4px; }
+  .tip { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 12px; padding: 10px 14px; font-size: 15.5px; }
+  .rule { background: var(--red-soft); border: 1px solid #f3c9cb; border-radius: 12px; padding: 10px 14px; font-size: 15.5px; }
+  .tag { display: inline-block; font-size: 12.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green); vertical-align: 2px; margin-left: 4px; }
+  .btnlike { display: inline-block; font-weight: 800; font-size: 13.5px; padding: 1px 10px; border-radius: 999px; background: var(--green); color: #fff; white-space: nowrap; }
+  .btnlike.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 8px 0 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 40px; margin-top: 10px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: "Fraunces", Georgia, serif; color: var(--green); font-size: 15.5px; }
+  td.c, th.c { text-align: center; }
+  .table-wrap { overflow-x: auto; }
+
+  details.tab, details.role { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+  details.tab + details.tab, details.role + details.role { margin-top: 10px; }
+  details > summary { list-style: none; cursor: pointer; padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary .ico { font-size: 26px; width: 34px; text-align: center; flex: none; }
+  details > summary b { font-family: "Fraunces", Georgia, serif; font-size: 20px; color: var(--green); display: block; line-height: 1.2; }
+  details > summary span.sub { color: var(--ink-soft); font-size: 14.5px; }
+  details > summary::after { content: "▾"; margin-left: auto; color: var(--ink-soft); font-size: 18px; }
+  details[open] > summary::after { content: "▴"; }
+  details > .body { padding: 0 18px 16px 64px; }
+  @media (max-width: 560px) { details > .body { padding-left: 18px; } }
+  .role .meta { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 15px; margin-top: 8px; }
+  .role .meta dt { font-weight: 800; color: var(--ink-soft); }
+  .role .meta dd { margin: 0; }
+
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 3px; background: var(--green-soft); border-radius: 3px; }
+  .when { position: relative; margin-top: 14px; }
+  .when::before { content: ""; position: absolute; left: -24px; top: 6px; width: 17px; height: 17px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px var(--bg); }
+  .when h3 { font-size: 19px; }
+
+  .faq dt { font-weight: 800; margin-top: 12px; }
+  .faq dd { margin: 2px 0 0; color: var(--ink); }
+
+  footer { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 10px 0 40px; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  @media print {
+    nav.toc, .backbar, .noprint { display: none !important; }
+    body { background: #fff; font-size: 12pt; }
+    details > .body { display: block !important; }
+    details > summary::after { content: ""; }
+    .card, details.tab, details.role { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="tartan" aria-hidden="true"></div>
+<div class="wrap backbar noprint">
+  <a href="hub.html">← Santa's Operations Hub</a>
+  <a href="#" onclick="openAll();window.print();return false;">🖨️ Print this guide</a>
+</div>
+<header class="hero wrap">
+  <img alt="The Kilted Santa Project logo" src="data:image/jpeg;base64,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">
+  <h1>The ELF Guide</h1>
+  <p class="elves"><b>E</b>nthusiastic <b>L</b>oving <b>V</b>olunteers <b>E</b>mpowering <b>S</b>anta</p>
+</header>
+
+<nav class="toc" aria-label="Guide sections">
+  <div class="wrap">
+    <a href="#welcome">👋 Welcome</a>
+    <a href="#start">🔑 Getting in</a>
+    <a href="#tour">🧭 Hub tour</a>
+    <a href="#access">🔒 Who sees what</a>
+    <a href="#roles">🧝 Ways to help</a>
+    <a href="#season">📅 The season</a>
+    <a href="#rules">❤️ Golden rules</a>
+    <a href="#faq">❓ Questions</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- WELCOME -->
+  <section id="welcome">
+    <h2>Welcome to the crew!</h2>
+    <div class="card stack">
+      <p>Every year right before Christmas, Santas in kilts drive across Jackson County bringing gifts and good cheer to families who could use a little extra joy. Families sign up, neighbors adopt them, Santa swings by as many homes as he can, and you, the ELVES, make the whole thing happen.</p>
+      <p><b>The ELVES run the show.</b> Justin steers the project and jumps in where he's needed, but the day-to-day belongs to the crew. Santa's Operations Hub is where we do that together: it shows what needs doing, who's on it, and which families still need help.</p>
+      <div class="tip">💡 <b>The one-sentence version:</b> open the hub, look at <b>Ways to help right now</b> on the Home tab, tap <span class="btnlike">I'll do it</span> on something that fits you, and mark it done when you're finished.</div>
+    </div>
+  </section>
+
+  <!-- GETTING IN -->
+  <section id="start">
+    <h2>Getting into the hub</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><b>Sign up to volunteer</b> on the Kilted Santa page, under "I want to volunteer." Check off everything you're interested in.</li>
+        <li><b>Wait for your ELF code.</b> A Lead looks over new volunteers and sends you a code like <b>ELF-7KQ4P2</b>, by email or text.</li>
+        <li><b>Open the hub</b> at <b>thepeoplesvoices.org/Kilted-Santa/hub.html</b>. Sign in with the email or phone number you signed up with, plus your code. Leave <b>"Keep me signed in"</b> checked on your own phone.</li>
+        <li><b>Put it on your home screen</b> so it opens like an app:
+          <ul class="tight">
+            <li><b>iPhone:</b> in Safari, tap the Share button, then <b>Add to Home Screen</b>.</li>
+            <li><b>Android:</b> in Chrome, tap the ⋮ menu, then <b>Add to Home screen</b>.</li>
+          </ul></li>
+      </ol>
+      <div class="rule" style="margin-top:14px">🔒 <b>Your ELF code is like a key.</b> It opens up details about the families we serve, so please don't share it, post it, or sign in on someone else's phone. Lost it? Ask a Lead for a new one.</div>
+    </div>
+  </section>
+
+  <!-- TOUR -->
+  <section id="tour">
+    <h2>A tour of the hub</h2>
+    <p class="intro">Tap any section to open it. The hub refreshes itself every minute; tap <b>Refresh</b> at the top any time you want the very latest.</p>
+
+    <details class="tab" open>
+      <summary><span class="ico">🏠</span><div><b>Home</b><span class="sub">Your starting point, every time</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li><b>The numbers</b> show how the season is going: families signed up, waiting for an adopter, adopted, wrapped, delivered, open tasks and more. Tap any number to jump to that list.</li>
+          <li><b>Ways to help right now</b> is a short list of the most useful things to do next, picked for your role. Tap the button on any line to jump in.</li>
+          <li><b>On your plate</b> lists the tasks you've claimed and haven't finished yet.</li>
+          <li><b>What the crew's been up to</b> is a live feed of everything happening: who claimed what, which families were adopted, deliveries on the big night.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">💬</span><div><b>Chat</b><span class="sub">Talk with the whole crew, your team, or one ELF</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li><b>🎄 Everyone</b> is the whole crew. Good for questions, shout-outs and "who has extra tape?"</li>
+          <li><b>🎁 Adoption team</b> is for Adoption ELVES and Leads only, so it's the place to talk about specific families.</li>
+          <li><b>🛷 Your Santa team</b> shows up once you've joined a team. Plan your route and meet-up time here.</li>
+          <li><b>Private messages:</b> pick a name under <b>＋ Private message…</b> to talk one-on-one. Only the two of you can see those messages, not even Leads.</li>
+          <li>A red number means new messages. While Chat is open, new messages show up every few seconds.</li>
+        </ul>
+        <div class="rule">Please keep family addresses, phone numbers and last names out of <b>Everyone</b>. Use the family's number instead, like "KS-004."</div>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">✅</span><div><b>Tasks</b><span class="sub">The to-do board for the whole crew</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li><b>Grab one:</b> tap <span class="btnlike">🙋 I'll do it</span>. It's yours, and everyone can see you've got it.</li>
+          <li><b>Finish it:</b> tap <span class="btnlike ghost">✅ Mark done</span>. That's it. Everyone sees it in the feed.</li>
+          <li><b>Can't get to it after all?</b> Tap <span class="btnlike ghost">Let someone else take it</span> and it goes back on the board. No guilt!</li>
+          <li><b>Spot something that needs doing?</b> Tap <span class="btnlike" style="background:var(--gold);color:#3a2a05">+ Post a task</span>. Give it a short title, pick an area (Wrapping, Shopping, Pickups &amp; drop-offs, Adoptions, Santa &amp; delivery, Spread the word), and add when and where if it matters.</li>
+          <li>Use the buttons at the top to see <b>Open</b>, <b>Mine</b>, <b>In progress</b> or <b>Done</b> tasks, or one area at a time.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">🎁</span><div><b>Families</b><span class="sub">Who we're helping, and how their gifts are coming along</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Every family has a number like <b>KS-004</b>. Swing-by requests start with <b>SB-</b>. Tap a family to open it.</li>
+          <li><b>The kids</b> section shows first names, ages, sizes and wish lists, which is everything you need to shop and wrap.</li>
+          <li><b>Gift progress</b> moves each family along: <i>Not started → Shopping → Gifts in → Wrapped → Loaded → Delivered</i>. Anyone can tap the next step when it's true.</li>
+          <li><b>Crew notes</b> are for things like "bike is in the church basement." Everyone on the crew can read them.</li>
+          <li><b>+ Post a task for this family</b> creates a task already linked to that family.</li>
+          <li><b>Search</b> by family number, a kid's first name or town.</li>
+        </ul>
+        <p><b>Adoption ELVES and Leads</b> also get:</p>
+        <ul class="tight">
+          <li><b>Needs review:</b> new families waiting to be checked. Use <b>View proof of address</b> and <b>View family photo</b> (they're never shared outside the adoption team), then tap <span class="btnlike">✅ Approve: proof checks out</span> to put them on the Adopt page.</li>
+          <li><b>⚠️ Flagged</b> means the sign-up uses the same phone or address as a family already signed up, or one we've removed. Look closely before approving.</li>
+          <li><b>🙋 I'll handle this family</b> marks you as their point person, so two ELVES don't call the same family.</li>
+          <li><b>Record an adopter</b> for adoptions that come in by phone or in person, or <b>Release</b> one that fell through so the family goes back on the Adopt page.</li>
+          <li><b>🗑 Remove</b> takes a family off the hub and the Adopt page if something doesn't add up. You'll be asked for a reason, and the record is kept in the sheet.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">🛷</span><div><b>Routes</b><span class="sub">Santa teams and their stops on Dec 23 and 24</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li><b>Join a Santa team</b> by typing its name at the top and tapping Save. Ask your team in Chat what it's called.</li>
+          <li>Check <b>"I'm comfortable doing random stops too"</b> if you're OK visiting families nobody adopted, and swing-by requests. Otherwise you'll only get adopted families.</li>
+          <li><b>Your team's card</b> lists your stops in order. Once a family is on your route, you'll see their address with a <b>Directions</b> link.</li>
+          <li>On the night, tap <span class="btnlike" style="background:var(--red)">🎅 Delivered!</span> (or <b>Swung by!</b>) at each stop. Tapped it by mistake? Hit <b>Undo</b>.</li>
+          <li><b>Adoption ELVES and Leads</b> build the routes: put families on a team with a stop number, and use <b>+ Add a swing-by</b> for requests that come in on Facebook or by phone.</li>
+        </ul>
+        <div class="tip">🎲 <b>Random stops</b> are families nobody adopted, plus swing-by requests. They go on Santa Justin's route unless a Santa who's comfortable with them takes them. None of them are promised to the family.</div>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">🧝</span><div><b>Crew</b><span class="sub">Everyone on the team, and how to reach them</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>See every ELF, their role, their Santa team, and what they signed up to help with. Use the buttons at the top to find, say, all the drivers.</li>
+          <li><b>Call</b>, <b>Text</b> or <b>Email</b> anyone right from their card.</li>
+          <li><b>Leads</b> also see people waiting to join. They can <b>Welcome</b> them (which sends their ELF code) or <b>Decline</b> them, change roles and teams, send a new code, or remove someone from the crew.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">📣</span><div><b>Stories</b><span class="sub">Ready-to-post stories that help families find adopters</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Only families who said "yes, share our story" show up here, and only after they're approved.</li>
+          <li>Each post has the kids' first names and ages, the family's story, and a link straight to that family on the Adopt page.</li>
+          <li>Tap <span class="btnlike">📋 Copy post</span>, then paste it into Facebook, a group, or a text to friends.</li>
+        </ul>
+        <div class="rule">Never add a photo, last name, street or school to a story post, even if you know it.</div>
+      </div>
+    </details>
+
+    <details class="tab">
+      <summary><span class="ico">🖨️</span><div><b>Printables</b><span class="sub">Asking local businesses to help</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li><b>Open the printables</b> to print a letter for businesses (your name and phone are already filled in), sign-up cards for them to fill out, a <b>Gift Drop-Off Here</b> window sign, and box labels.</li>
+          <li>When a business says yes, fill out <b>"A business said yes? Log it here."</b> That posts a task, so someone sets up the box and schedules pickups.</li>
+          <li>The <b>Businesses helping</b> list shows every business on board so far.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ACCESS -->
+  <section id="access">
+    <h2>Who sees what</h2>
+    <p class="intro">Every family trusts us with something personal. The hub only shows each ELF what their job needs.</p>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th></th><th class="c">ELF</th><th class="c">Adoption ELF</th><th class="c">Lead</th></tr></thead>
+        <tbody>
+          <tr><td>Tasks, chat, crew, gift progress, crew notes</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Kids' first names, ages, sizes and wish lists</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Addresses of the stops on <b>your own</b> Santa route</td><td class="c">✅</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>All parent names, phones and addresses</td><td class="c">—</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Proof of address and family photos (never posted)</td><td class="c">—</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Approve, remove and route families; add swing-bys</td><td class="c">—</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Adoption team chat</td><td class="c">—</td><td class="c">✅</td><td class="c">✅</td></tr>
+          <tr><td>Welcome or decline volunteers, set roles, send codes</td><td class="c">—</td><td class="c">—</td><td class="c">✅</td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="margin:10px 0 0;color:var(--ink-soft);font-size:14px">Most of the crew are <b>ELVES</b>. One or two volunteers are <b>Adoption ELVES</b>, who handle families and adopters. <b>Leads</b> steer the project.</p>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section id="roles">
+    <h2>Ways to help</h2>
+    <p class="intro">These match the boxes on the volunteer sign-up. Pick one, a few, or try something new each week. A couple hours of wrapping counts just as much as a night in the sleigh.</p>
+
+    <details class="role">
+      <summary><span class="ico">🎅</span><div><b>Kilted Santa</b><span class="sub">Suit up and deliver the magic</span></div></summary>
+      <div class="body">
+        <p>You're the face of the whole project. Santas visit families on <b>Dec 23 and 24</b> with gifts, a big laugh and a little magic.</p>
+        <ul class="tight">
+          <li>Join a Santa team on the <b>Routes</b> tab, and check your stops and directions ahead of time.</li>
+          <li>Plan the route and meet-up with your team in <b>Chat</b>.</li>
+          <li>Tap <b>Delivered!</b> at each stop so the crew can follow along.</li>
+          <li>Check "comfortable with random stops" if you're happy to take swing-bys and unadopted families too.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>A planning chat in December, then Dec 23 and/or 24</dd><dt>Hub tabs</dt><dd>Routes, Chat</dd><dt>Great if</dt><dd>You've got a big laugh, a warm heart and an evening to give</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🧝</span><div><b>Elf / delivery helper</b><span class="sub">Santa's right hand on the big night</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Ride along with a Santa team, carry gifts to the door, and keep everyone on schedule.</li>
+          <li>Keep the route open on your phone and mark each stop delivered, so Santa can stay in character.</li>
+          <li>Help load the vehicle when gifts are marked <b>Loaded</b>.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>Dec 23 and/or 24, plus loading day</dd><dt>Hub tabs</dt><dd>Routes, Families, Chat</dd><dt>Great if</dt><dd>You love the big night but would rather not wear the beard</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🚗</span><div><b>Driver</b><span class="sub">Get Santas and gifts where they need to go</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Drive a Santa team on delivery night. Use the <b>Directions</b> links on your route.</li>
+          <li>Run pickups through December: gifts from drop-off businesses, donations, and wrapped gifts headed to the loading spot. Look for <b>Pickups &amp; drop-offs</b> tasks.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>A few runs in December, then Dec 23 and/or 24</dd><dt>Hub tabs</dt><dd>Tasks, Routes</dd><dt>Great if</dt><dd>You have a reliable vehicle and know the county roads</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🎀</span><div><b>Gift wrapper</b><span class="sub">Make every gift look like it came from the North Pole</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Come to wrapping parties, or take a family's gifts home to wrap.</li>
+          <li>Label each gift with the family number and the kid's first name. That's how Santa gets the right gift to the right kiddo.</li>
+          <li>When a family's gifts are done, move them to <b>Wrapped</b> on the Families tab.</li>
+          <li>Running low on paper or tape? Post a <b>Wrapping</b> task or ask in Chat.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>Mostly mid-December</dd><dt>Hub tabs</dt><dd>Families, Tasks, Chat</dd><dt>Great if</dt><dd>You like a cozy evening, a good playlist and crisp corners</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🛍️</span><div><b>Shopper</b><span class="sub">Turn wish lists into wrapped-up joy</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Fill in the gaps on wish lists: for families nobody adopted, kids whose list isn't covered yet, and donated gift cards that need turning into gifts.</li>
+          <li>Use the sizes and wishes on each family's page, and leave a crew note on what you bought so nobody doubles up.</li>
+          <li>Move the family to <b>Shopping</b> while you're on it, then <b>Gifts in</b> when everything's collected.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>Late November through mid-December</dd><dt>Hub tabs</dt><dd>Families, Tasks</dd><dt>Great if</dt><dd>You love a good deal and know what a 9-year-old actually wants</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🏪</span><div><b>Gift drop-off host</b><span class="sub">Be a spot where gifts can be dropped off</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Host a drop-off box at your business, church or porch, or sign up local businesses to host one.</li>
+          <li>Print the <b>window sign</b> and <b>box labels</b> from the Printables tab.</li>
+          <li>Log each drop-off spot in Printables, so drivers can schedule pickups.</li>
+          <li>Let the crew know in Chat when a box is getting full.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>November through the drop-off deadline</dd><dt>Hub tabs</dt><dd>Printables, Tasks, Chat</dd><dt>Great if</dt><dd>You run a business or know the folks who do</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">🤝</span><div><b>Family match helper</b> <span class="tag">usually an Adoption ELF</span><span class="sub">The heart of the adoption desk</span></div></summary>
+      <div class="body">
+        <p>One or two ELVES take on this role. It's the most trusted job on the crew, because you'll see families' private details.</p>
+        <ul class="tight">
+          <li><b>Check new sign-ups:</b> make sure the proof of address matches and the family is in our area, then approve them. Remove ones that don't add up.</li>
+          <li><b>Be the go-between:</b> answer adopters' questions about sizes and wishes, connect adopters directly with families when they've asked for that, and keep track of how adopters are dropping off gifts.</li>
+          <li><b>Follow up</b> with adopters who've gone quiet. If an adoption falls through, release the family so someone else can adopt them.</li>
+          <li><b>Build the routes</b> with the Santa teams, and add swing-by requests that come in through Facebook or by phone.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>A little each week from November 1 through Christmas</dd><dt>Hub tabs</dt><dd>Families, Routes, Chat (Adoption team)</dd><dt>Great if</dt><dd>You're organized, kind on the phone, and can keep things confidential</dd></dl>
+      </div>
+    </details>
+
+    <details class="role">
+      <summary><span class="ico">📣</span><div><b>Spread the word</b><span class="sub">Help families and givers find us</span></div></summary>
+      <div class="body">
+        <ul class="tight">
+          <li>Share family stories from the <b>Stories</b> tab in your Facebook groups, church groups and group chats. Every share is a chance at an adopter.</li>
+          <li>Hang flyers, and bring the business kit from <b>Printables</b> to local shops.</li>
+          <li>Tell friends who are struggling about the <b>sign-up</b> and the <b>swing-by request</b>. Sometimes the families who need us most don't know we exist.</li>
+        </ul>
+        <dl class="meta"><dt>When</dt><dd>Anytime, from your couch</dd><dt>Hub tabs</dt><dd>Stories, Printables</dd><dt>Great if</dt><dd>You know everybody, or you're great with a phone</dd></dl>
+      </div>
+    </details>
+
+    <div class="tip" style="margin-top:14px">🙋 <b>Something else you're great at?</b> Photography of the event (never of families), baking for wrapping nights, a garage to stage gifts in? Post it in Chat, or post a task, and make it your thing.</div>
+  </section>
+
+  <!-- SEASON -->
+  <section id="season">
+    <h2>How the season flows</h2>
+    <div class="card timeline">
+      <div class="when"><h3>November 1: sign-ups open</h3><p>Families sign up, Adoption ELVES check and approve them, stories go out, and the crew starts visiting businesses for drop-off spots.</p></div>
+      <div class="when"><h3>November into early December: adoptions</h3><p>Neighbors adopt families. Shoppers and adopters fill wish lists. Drivers start pickup runs from drop-off spots.</p></div>
+      <div class="when"><h3>Mid-December: wrapping</h3><p>Gifts come in, wrapping parties happen, and families move to <b>Wrapped</b>. Adoption ELVES and Santa teams finish the routes.</p></div>
+      <div class="when"><h3>Just before the big night: loading</h3><p>Gifts are sorted by route and loaded up. Families are marked <b>Loaded</b>.</p></div>
+      <div class="when"><h3>Dec 23 and 24: Santa's on the road 🎅</h3><p>Santa teams deliver, swing-bys happen where the sleigh can fit them, and the feed lights up with deliveries.</p></div>
+      <div class="when"><h3>After Christmas</h3><p>Thank the businesses and adopters (only by name if they said OK), and get some rest. You earned it.</p></div>
+    </div>
+  </section>
+
+  <!-- RULES -->
+  <section id="rules">
+    <h2>Golden rules</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><b>Never post or share a family's photo.</b> Not even a sweet one, and not even with permission. Story posts are first names, ages, the story and the link. That's all.</li>
+        <li><b>Private stays private.</b> Addresses, phone numbers, last names and proof documents stay in the hub. Use family numbers (KS-004) when you talk about families.</li>
+        <li><b>No promises.</b> We can't guarantee every family gets adopted, or when Santa will swing by. If a family asks, be kind and honest: "We're doing everything we can, and we'll be in touch."</li>
+        <li><b>Families come first, judgment never.</b> Everyone who signs up has been through something. Be warm, and let the adoption team do the checking.</li>
+        <li><b>Claim it, then do it.</b> If you grab a task and life happens, let it go so someone else can pick it up.</li>
+        <li><b>When in doubt, ask in Chat.</b> Someone's always happy to help.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <h2>Questions</h2>
+    <div class="card">
+      <dl class="faq">
+        <dt>I lost my ELF code, or it stopped working.</dt>
+        <dd>Ask a Lead. They can send you a new one from the Crew tab in a few seconds.</dd>
+        <dt>Why can't I see a family's address?</dt>
+        <dd>That's on purpose. You'll see the address once the family is on your Santa team's route. Adoption ELVES and Leads see them all.</dd>
+        <dt>How do I join or switch Santa teams?</dt>
+        <dd>On the Routes tab, type the team name next to "Your Santa team" and tap Save.</dd>
+        <dt>Something looks out of date.</dt>
+        <dd>Tap <b>Refresh</b> at the top of the hub. If the hub itself was just updated, close the tab and open it again.</dd>
+        <dt>A family asked me directly when Santa is coming.</dt>
+        <dd>Thank them warmly, don't promise a time, and let the Adoption team know in Chat.</dd>
+        <dt>A business wants to know if their donation is tax-deductible.</dt>
+        <dd>Don't guess. Let them know a Lead will follow up, and post the question in Chat.</dd>
+        <dt>I want to help but I'm not sure where.</dt>
+        <dd>Open Home, look at <b>Ways to help right now</b>, and pick the first thing that makes you smile.</dd>
+      </dl>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">Thank you for being someone's Christmas. 🎄<br>The Kilted Santa Project</footer>
+<div class="tartan" aria-hidden="true"></div>
+
+<script>
+  function openAll() { document.querySelectorAll("details").forEach(d => d.open = true); }
+  window.addEventListener("beforeprint", openAll);
+  // Open the section a link points to (e.g. guide.html#roles opens the role cards).
+  if (location.hash === "#roles") document.querySelector("#roles details").open = true;
+</script>
+</body>
+</html>
