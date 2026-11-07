@@ -495,6 +495,7 @@ function viewHome() {
       h("h2", { style: "font-size:24px" }, me.isLead ? "Welcome back, " + firstName(me.name) + " 🎅" : "Hi " + firstName(me.name) + ", thanks for being an ELF 🎄"),
       h("p", { class: "muted", style: "margin:6px 0 0" }, roleLine),
       h("div", { class: "row", style: "margin-top:10px" }, h("a", { class: "btn ghost sm", href: "guide.html" }, "📖 ELF Guide: how the hub works & ways to help"))),
+    me.isAdopt ? needsAttention() : null,
     stats,
     gfmCard(true),
     h("div", { class: "section-title" }, h("h2", null, "Ways to help right now"), h("button", { class: "btn sm gold", onclick: () => go("tasks", { newTask: {} }) }, "+ Post a task")),
@@ -507,6 +508,54 @@ function viewHome() {
       h("b", null, firstName(l.who)), " ", l.what, " ", h("span", { class: "tiny muted", text: "· " + ago(l.when) })))
       : h("div", { class: "empty", text: "Nothing yet. Be the first!" }))
   );
+}
+// Leads and Adoption ELVES: everything that's slipping, in one place.
+const DAY = 86400000;
+const olderThan = (iso, days) => iso && Date.now() - new Date(iso).getTime() > days * DAY;
+const plural = (n, one, many) => n + " " + (n === 1 ? one : many);
+const idList = list => list.slice(0, 6).map(f => f.id).join(", ") + (list.length > 6 ? " +" + (list.length - 6) + " more" : "");
+function needsAttention() {
+  const F = S.families.filter(f => !isSwing(f)), rows = [];
+  const add = (n, ico, title, sub, label, fn) => { if (n) rows.push([ico, title, sub, label, fn]); };
+  const pend = F.filter(f => f.status === "Pending review");
+  const flagged = pend.filter(f => f.flag || (f.inArea && f.inArea !== "Yes")).length;
+  add(pend.length, "🔍", plural(pend.length, "family is", "families are") + " waiting for review",
+    [pend.some(f => olderThan(f.submitted, 3)) ? "Some have waited 3+ days" : "", flagged ? flagged + " flagged or outside the area" : ""].filter(Boolean).join(" · ") || "Check their proof and approve them",
+    "Review", () => go("families", { famFilter: "Pending review" }));
+  const adopted = F.filter(f => f.status === "Adopted");
+  const notTold = adopted.filter(f => !f.told);
+  add(notTold.length, "✉️", plural(notTold.length, "adopted family hasn't", "adopted families haven't") + " heard the good news",
+    idList(notTold) + " · adopted before automatic emails. One tap emails them (or adds a call task if there's no email).",
+    "Tell them", b => act(b, "fam_tell", { familyIds: notTold.map(f => f.id) }));
+  const noEmail = adopted.filter(f => /^No email/.test(f.told) && !f.contacted);
+  add(noEmail.length, "📞", plural(noEmail.length, "adopted family needs", "adopted families need") + " a call or text",
+    idList(noEmail) + " · no email on file, so they don't know yet", "See them", () => go("families", { famFilter: "contact" }));
+  const notContacted = adopted.filter(f => !f.contacted && !/^No email/.test(f.told) && f.told);
+  add(notContacted.length, "☎️", plural(notContacted.length, "adopted family hasn't", "adopted families haven't") + " talked with an ELF yet",
+    idList(notContacted) + " · they got the email; an ELF still needs to set up delivery", "See them", () => go("families", { famFilter: "contact" }));
+  const noRoute = adopted.filter(f => !f.team);
+  if (new Date().getMonth() === 11 || noRoute.length >= 10)
+    add(noRoute.length, "🛷", plural(noRoute.length, "adopted family isn't", "adopted families aren't") + " on a route yet", idList(noRoute), "Routes", () => go("routes"));
+  const stale = S.tasks.filter(t => t.status === "Open" && olderThan(t.created, 3));
+  add(stale.length, "📌", plural(stale.length, "task has", "tasks have") + " sat unclaimed for 3+ days", stale.slice(0, 3).map(t => t.title).join(" · "), "Tasks", () => go("tasks", { taskFilter: "open" }));
+  if (me.isLead) {
+    const waiting = S.crew.filter(c => c.access === "Pending");
+    add(waiting.length, "🧝", plural(waiting.length, "volunteer is", "volunteers are") + " waiting to be approved",
+      waiting.slice(0, 4).map(c => c.name).join(", ") + " · they haven't gotten their ELF code yet", "Crew", () => go("crew"));
+    const never = S.crew.filter(c => c.access === "Approved" && !c.lastSeen && !c.me);
+    add(never.length, "🔑", plural(never.length, "ELF hasn't", "ELVES haven't") + " signed in yet",
+      never.slice(0, 4).map(c => c.name).join(", ") + " · resend their code with one tap", "Crew", () => go("crew"));
+    const quiet = S.crew.filter(c => c.access === "Approved" && c.lastSeen && olderThan(c.lastSeen, 14) && !c.me);
+    add(quiet.length, "💤", plural(quiet.length, "ELF hasn't", "ELVES haven't") + " been in the hub for 2+ weeks",
+      quiet.slice(0, 4).map(c => c.name).join(", "), "Crew", () => go("crew"));
+  }
+  return h("div", { class: "card", style: rows.length ? "border:2px solid var(--gold)" : "" },
+    h("h3", { style: "font-size:19px;margin-bottom:4px" }, rows.length ? "👀 Needs attention" : "✅ Nothing's slipping"),
+    rows.length ? rows.map(([ico, title, sub, label, fn]) => h("div", { class: "help-item" },
+      h("span", { class: "ico", "aria-hidden": "true", text: ico }),
+      h("div", { class: "grow" }, h("b", { text: title }), sub ? h("div", { class: "small muted", text: sub }) : null),
+      h("button", { class: "btn sm", onclick: e => fn(e.currentTarget) }, label)))
+      : h("p", { class: "small muted", style: "margin:0" }, "Every family is reviewed and in touch, and every ELF has signed in. Nice work, crew!"));
 }
 function stat(n, label, onclick, alert) {
   return h("button", { class: "stat" + (alert ? " alert" : ""), onclick }, h("b", { text: n }), h("span", { text: label }));
@@ -619,10 +668,12 @@ function viewFamilies() {
   if (!ui.famFilter) ui.famFilter = me.isAdopt && F.some(f => f.status === "Pending review") ? "Pending review" : "all";
   const filters = [
     me.isAdopt ? ["Pending review", "Needs review"] : null,
-    ["Available", "Open for adoption"], ["Adopted", "Adopted"], ["Swing-by request", "Swing-bys"], ["Delivered", "Delivered / visited"], ["all", "All"]
+    ["Available", "Open for adoption"], ["Adopted", "Adopted"], me.isAdopt ? ["contact", "📞 Needs contact"] : null, ["Swing-by request", "Swing-bys"], ["Delivered", "Delivered / visited"], ["all", "All"]
   ].filter(Boolean);
+  const needsContact = f => f.status === "Adopted" && !isSwing(f) && !f.contacted;
+  const inFilter = (f, v) => v === "all" || (v === "contact" ? needsContact(f) : f.status === v);
   const q = ui.famSearch.trim().toLowerCase();
-  let list = F.filter(f => ui.famFilter === "all" || f.status === ui.famFilter);
+  let list = F.filter(f => inFilter(f, ui.famFilter));
   if (q) list = list.filter(f => [f.id, f.town, f.adopter, f.parent, f.team, ...f.kids.map(k => k.name)].join(" ").toLowerCase().includes(q));
   list.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
   const search = h("input", { type: "search", placeholder: "Search family #, kid's name, town…", value: ui.famSearch,
@@ -631,7 +682,7 @@ function viewFamilies() {
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Families"),
       h("span", { class: "small muted", text: me.isAdopt ? "You can see private details. Please keep them in the hub." : "Parent names and addresses stay with the adoption team." })),
     h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.famFilter === v),
-      onclick: () => { ui.famFilter = v; render(); } }, l + " (" + (v === "all" ? F.length : F.filter(f => f.status === v).length) + ")"))),
+      onclick: () => { ui.famFilter = v; render(); } }, l + " (" + F.filter(f => inFilter(f, v)).length + ")"))),
     search,
     list.length ? h("div", { class: "stack" }, list.map(famCard)) : h("div", { class: "card empty", text: F.length ? "No families match." : "No families have signed up yet." }));
 }
@@ -644,7 +695,8 @@ function famCard(f) {
         h("div", { class: "row" }, h("h3", { text: famLabel(f) }), statusBadge(f.status, f),
           !isSwing(f) && f.status !== "Pending review" && f.status !== "Available" && f.status !== "Delivered" ? h("span", { class: "badge b-role", text: "🎁 " + f.gift }) : null,
           f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null,
-          f.flag ? h("span", { class: "badge b-red", text: "⚠️ Flagged" }) : null),
+          f.flag ? h("span", { class: "badge b-red", text: "⚠️ Flagged" }) : null,
+          me.isAdopt && f.status === "Adopted" && !isSwing(f) && !f.contacted ? h("span", { class: "badge b-pending", text: /^No email/.test(f.told) ? "📞 Doesn't know yet" : "📞 Not contacted" }) : null),
         h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") + (f.handledBy ? " · handled by " + firstName(f.handledBy) : "") })),
       h("span", { "aria-hidden": "true", style: "font-size:20px", text: isOpen ? "▴" : "▾" })),
     isOpen ? famBody(f) : null);
@@ -712,8 +764,16 @@ function famBody(f) {
           h("dt", null, "Email"), h("dd", { text: f.adopterEmail || "—" }),
           h("dt", null, "Connect"), h("dd", { text: f.connection || "—" }),
           h("dt", null, "Gifts"), h("dd", { text: f.giftPlan || "—" }),
-          f.adopterNotes ? [h("dt", null, "Notes"), h("dd", { text: f.adopterNotes })] : null),
-        h("div", { class: "row", style: "margin-top:8px" }, telLinks(f.adopterPhone, f.adopterEmail),
+          f.adopterNotes ? [h("dt", null, "Notes"), h("dd", { text: f.adopterNotes })] : null,
+          h("dt", null, "Family told"), h("dd", { text: f.told ? (/^Emailed/.test(f.told) ? "✉️ " + f.told + " (automatic)" : "⚠️ " + f.told) : "Not yet" }),
+          h("dt", null, "Contacted"), h("dd", { text: f.contacted ? "✅ " + f.contacted.replace(/^Yes · /, "") : "Not yet. Call or text them about delivery" })),
+        h("div", { class: "row", style: "margin-top:8px" },
+          f.contacted
+            ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_contacted", { familyId: f.id, undo: true }) }, "Undo contacted")
+            : h("button", { class: "btn sm", onclick: e => act(e.currentTarget, "fam_contacted", { familyId: f.id }) }, "☑️ Mark family contacted"),
+          !f.told || /^No email/.test(f.told) && f.email ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_tell", { familyId: f.id }) }, "✉️ Email the family the good news") : null),
+        h("div", { class: "row", style: "margin-top:8px" }, h("span", { class: "small muted", text: "Family:" }), telLinks(f.phone, f.email)),
+        h("div", { class: "row", style: "margin-top:8px" }, h("span", { class: "small muted", text: "Adopter:" }), telLinks(f.adopterPhone, f.adopterEmail),
           f.adopterEmail ? h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_sendlist", { familyId: f.id }) }, "✉️ Email wish list to adopter")
             : h("button", { class: "btn ghost sm", onclick: () => copyText("Here's Family " + f.id + "'s wish list anytime: " + S.publicUrl + "#mylist (enter " + f.id + " and the phone number you adopted with)") }, "📋 Copy wish-list link to text"),
           h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Release?")) act(e.currentTarget, "fam_release", { familyId: f.id }); } }, "Release back to Adopt page"))));
@@ -956,6 +1016,7 @@ function viewCrew() {
   const approved = S.crew.filter(c => c.access === "Approved");
   const pending = S.crew.filter(c => c.access === "Pending");
   const paused = S.crew.filter(c => c.access === "Paused");
+  const never = approved.filter(c => !c.lastSeen && !c.me);
   const wantsSet = new Set();
   approved.forEach(c => c.wants.split(/,\s*/).forEach(w => { w = w.replace(/\s*\(.*$/, "").trim(); if (w) wantsSet.add(w); }));
   const filt = ui.crewWants;
@@ -966,6 +1027,12 @@ function viewCrew() {
     me.isLead && pending.length ? h("div", { class: "stack" },
       h("h3", { style: "font-size:19px", text: "🧝 Waiting to join (" + pending.length + ")" }),
       pending.map(pendingCard)) : null,
+    me.isLead && never.length ? h("div", { class: "card", style: "border:2px solid var(--gold)" },
+      h("h3", { style: "font-size:19px", text: "🔑 Approved, but haven't signed in yet (" + never.length + ")" }),
+      h("p", { class: "small muted", style: "margin:4px 0 6px" }, "They may have missed the email or not know how to get in. Resend their sign-in steps, or text them their code."),
+      never.map(c => h("div", { class: "help-item" },
+        h("div", { class: "grow" }, h("b", { text: c.name }), h("div", { class: "small muted", text: [c.email ? "✉️ " + c.email : "No email: text only", c.phone].filter(Boolean).join(" · ") })),
+        h("button", { class: "btn sm", onclick: async e => { const r = await act(e.currentTarget, "crew_resend", { row: c.row, name: c.name }); if (r && r.extra) showCode(r.extra); } }, c.email ? "📨 Resend" : "💬 Text code")))) : null,
     h("div", { class: "chips" },
       h("button", { class: "chip", "aria-pressed": String(!filt), onclick: () => { ui.crewWants = ""; render(); } }, "Everyone"),
       [...wantsSet].sort().map(w => h("button", { class: "chip", "aria-pressed": String(filt === w), onclick: () => { ui.crewWants = w; render(); } }, w))),
@@ -1005,7 +1072,8 @@ function crewCard(c) {
       h("span", { class: "badge b-role", text: c.role }),
       c.team ? h("span", { class: "badge b-adopted", text: "🛷 " + c.team }) : null,
       c.randomOk ? h("span", { class: "badge b-pending", text: "🎲 random deliveries OK" }) : null,
-      c.lastSeen ? h("span", { class: "tiny muted", style: "margin-left:auto", text: "in the hub " + ago(c.lastSeen) }) : null),
+      c.lastSeen ? h("span", { class: "tiny muted", style: "margin-left:auto", text: "in the hub " + ago(c.lastSeen) })
+        : c.access === "Approved" && !c.me ? h("span", { class: "badge b-red", style: "margin-left:auto", text: "Never signed in" }) : null),
     c.wants ? h("div", { class: "small", style: "margin-top:4px", text: c.wants }) : null,
     h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
     c.me ? null : h("div", { style: "margin-top:8px" }, telLinks(c.phone, c.email)));
@@ -1020,6 +1088,7 @@ function crewCard(c) {
       h("div", { class: "row", style: "align-items:flex-end" },
         h("button", { class: "btn sm", type: "submit" }, "Save"),
         h("button", { class: "btn ghost sm", type: "button", onclick: () => showCode({ code: c.code, name: c.name, phone: c.phone, emailed: false, existing: true }) }, "Show code"),
+        c.access === "Approved" ? h("button", { class: "btn ghost sm", type: "button", onclick: async e => { const r = await act(e.currentTarget, "crew_resend", { row: c.row, name: c.name }); if (r && r.extra) showCode(r.extra); } }, "📨 Resend sign-in") : null,
         h("button", { class: "btn ghost sm", type: "button", onclick: async e => { if (!confirmInline(e.currentTarget, "New code?")) return; const r = await act(e.currentTarget, "crew_code", { row: c.row, name: c.name }); if (r && r.extra) showCode(r.extra); } }, "New code"),
         h("button", { class: "btn ghost sm", type: "button", onclick: () => removeCrewDialog(c) }, "Remove from crew")));
     if (c.me) $("[name=access]", form).closest("label").append(h("input", { type: "hidden", name: "access", value: "Approved" }));
