@@ -157,6 +157,9 @@
   .fam-head h3 { font-size: 19px; }
   .fam-body { border-top: 1px solid var(--line); padding: 14px 16px 16px; }
   .kidline { font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+  .nextline { font-size: 14px; margin-top: 6px; color: var(--ink); }
+  .nextline b { color: var(--green); }
+  .lastline { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .kid { padding: 8px 0; border-top: 1px dashed var(--line); }
   .kid:first-child { border-top: 0; }
   .block { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
@@ -697,9 +700,29 @@ function famCard(f) {
           f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null,
           f.flag ? h("span", { class: "badge b-red", text: "⚠️ Flagged" }) : null,
           me.isAdopt && f.status === "Adopted" && !isSwing(f) && !f.contacted ? h("span", { class: "badge b-pending", text: /^No email/.test(f.told) ? "📞 Doesn't know yet" : "📞 Not contacted" }) : null),
-        h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") + (f.handledBy ? " · handled by " + firstName(f.handledBy) : "") })),
+        h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") }),
+        nextStep(f) ? h("div", { class: "nextline" }, h("b", { text: "👉 Next: " }), nextStep(f),
+          f.handledBy ? h("span", { class: "muted", text: " · 🙋 " + firstName(f.handledBy) + " is on it" }) : null) : null,
+        f.last ? h("div", { class: "lastline", text: "Last: " + (f.last.who && f.last.who !== "Sign-up page" ? firstName(f.last.who) + " " : "") + f.last.what.replace(/\s+/g, " ").slice(0, 90) + (f.last.when ? " · " + ago(f.last.when) : "") }) : null),
       h("span", { "aria-hidden": "true", style: "font-size:20px", text: isOpen ? "▴" : "▾" })),
     isOpen ? famBody(f) : null);
+}
+// One plain sentence: what this family needs next, so anyone can pick it up.
+function nextStep(f) {
+  if (isSwing(f)) return null;
+  switch (f.status) {
+    case "Pending review": return me.isAdopt ? "check their proof of address and approve them" : "an Adoption ELF checks their sign-up";
+    case "Available": return "find them an adopter (share their story from the Stories tab)";
+    case "Adopted":
+      if (me.isAdopt && !f.told) return "let the family know they were adopted";
+      if (me.isAdopt && !f.contacted) return "call or text the family about delivery";
+      if (f.gift === "Not started") return "check in with the adopter about gifts";
+      if (!f.team) return "put them on a Santa route";
+      if (f.gift !== "Loaded" && f.gift !== "Delivered") return "get the gifts ready (" + f.gift.toLowerCase() + " so far)";
+      return "ready for delivery day 🎅";
+    case "Delivered": return "all done ✓";
+    default: return null;
+  }
 }
 function famBody(f) {
   if (isSwing(f)) return swingBody(f);
