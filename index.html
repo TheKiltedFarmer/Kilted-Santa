@@ -224,6 +224,13 @@
   .area-note { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--gold); font-size: 15px; }
 
   .mylist-card { margin-bottom: 18px; padding: 14px 16px; }
+  .crew-msgs { margin-top: 14px; }
+  .crew-msgs h3 { margin: 0 0 8px; }
+  .crew-msgs textarea { width: 100%; margin-top: 8px; }
+  .thread { display: grid; gap: 8px; }
+  .tmsg { padding: 8px 12px; border-radius: 12px; background: #f2f6f3; max-width: 92%; }
+  .tmsg.crew { background: #fff6dc; }
+  .tmsg.me { justify-self: end; }
   .mylist-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   .wishlist { text-align: left; margin: 18px auto 0; max-width: 560px; border: 2px solid var(--gold); border-radius: 14px; padding: 16px; background: var(--surface); }
   .wishlist h3 { font-size: 20px; margin-bottom: 6px; }
@@ -392,8 +399,8 @@
 
     <div class="card mylist-card" id="mylist">
       <div class="mylist-top">
-        <span><b>Already adopted a family?</b> See their wish list again anytime.</span>
-        <button class="btn ghost small" type="button" id="mylist-open">🎁 See my family's wish list</button>
+        <span><b>Already adopted a family?</b> See their wish list or message the crew.</span>
+        <button class="btn ghost small" type="button" id="mylist-open">🎁 My family's list &amp; messages</button>
       </div>
       <form id="f-mylist" novalidate hidden style="margin-top:12px">
         <div class="grid">
@@ -1022,7 +1029,7 @@ $("#f-adopt").addEventListener("submit", async e => {
     if (s) {
       s.append(wishListNode(chosen, [
         adopterEmail ? "We also emailed this list to " + adopterEmail + "." : "Tip: print it or take a screenshot so you have it while you shop.",
-        "Need it again later? Tap “See my family's wish list” on the Adopt tab and enter Family " + id + " with the email or phone you just used."
+        "Need the list again, or have a question for the crew? Tap “My family's list & messages” on the Adopt tab and enter Family " + id + " with the email or phone you just used."
       ]));
       const a = el("div", "actions"); a.style.justifyContent = "center"; a.append(again); s.append(a);
     }
@@ -1055,6 +1062,45 @@ function wishListNode(f, extraLines) {
   acts.append(pr); box.append(acts);
   return box;
 }
+// Adopters talk to the whole crew from here (not a personal inbox), and see the replies.
+function crewMessages(familyId, contact, thread) {
+  const box = el("div", "card crew-msgs");
+  box.append(el("h3", null, "💬 Message the Kilted Santa crew"));
+  const list = el("div", "thread");
+  const draw = t => {
+    list.replaceChildren(...t.map(x => {
+      const m = el("div", "tmsg " + (x.from === "crew" ? "crew" : "me"));
+      m.append(el("b", null, x.from === "crew" ? x.who + " (ELF)" : "You"));
+      m.append(el("span", "hint", " · " + new Date(x.when).toLocaleDateString(undefined, { month: "short", day: "numeric" })));
+      m.append(el("div", null, x.text));
+      return m;
+    }));
+    if (!t.length) list.append(el("p", "hint", "Questions about sizes, wishes or dropping off gifts? Send us a note. It goes to the whole crew, and replies come to your email."));
+  };
+  draw(thread);
+  const form = document.createElement("form"); form.noValidate = true;
+  const ta = document.createElement("textarea"); ta.rows = 3; ta.maxLength = 1000; ta.placeholder = "Hi! I have a question about…";
+  const btn = el("button", "btn", "Send message"); btn.type = "submit";
+  const msg = el("div", "msg err"); msg.setAttribute("role", "alert");
+  const actions = el("div", "actions"); actions.append(btn);
+  form.append(ta, actions, msg);
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); msg.textContent = ""; msg.classList.remove("show");
+    const text = ta.value.trim();
+    if (!text) { msg.textContent = "Write your message first."; msg.classList.add("show"); return; }
+    btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      const res = DEMO ? { ok: true, thread: thread.concat([{ from: "adopter", who: "You", when: new Date().toISOString(), text }]) }
+        : await send({ type: "adopter_msg", familyId, contact, message: text });
+      if (!res || !res.ok) { msg.textContent = (res && res.error) || "Something went wrong. Please try again."; msg.classList.add("show"); return; }
+      thread = res.thread || thread; draw(thread); ta.value = "";
+      const ok = el("p", "hint", "✅ Sent! An ELF will get back to you, usually within a day or two."); form.after(ok); setTimeout(() => ok.remove(), 8000);
+    } catch (err) { msg.textContent = "We couldn't send that. Check your connection and try again. Your message is still here."; msg.classList.add("show"); }
+    finally { btn.disabled = false; btn.textContent = "Send message"; }
+  });
+  box.append(list, form);
+  return box;
+}
 function printList(node) {
   const area = document.getElementById("print-area") || document.body.appendChild(Object.assign(document.createElement("div"), { id: "print-area" }));
   area.replaceChildren(node.cloneNode(true));
@@ -1079,7 +1125,7 @@ $("#f-mylist").addEventListener("submit", async e => {
     else res = await send({ type: "mylist", familyId, contact });
     if (!res || !res.ok) return showErr(f, (res && res.error) || "Something went wrong. Please try again.");
     f.hidden = true;
-    $("#mylist-result").replaceChildren(wishListNode(res.family, ["Questions about sizes or drop-off? Reach out to the Kilted Santa team anytime."]));
+    $("#mylist-result").replaceChildren(wishListNode(res.family, []), crewMessages(familyId, contact, res.thread || []));
   } catch (err) { showErr(f, "We couldn't reach the sign-up sheet. Check your connection and try again."); }
   finally { btn.disabled = false; btn.textContent = "Show the wish list"; }
 });
