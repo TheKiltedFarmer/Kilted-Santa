@@ -144,6 +144,18 @@
   .help-item .btn { white-space: nowrap; flex: none; }
   .feed-item { padding: 8px 0; border-top: 1px dashed var(--line); font-size: 14.5px; }
   .feed-item:first-child { border-top: 0; }
+  .feed-who { background: none; border: 0; padding: 0; font: inherit; font-weight: 800; color: var(--green); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .feed-link { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .feed-link .go { color: var(--green); font-weight: 700; white-space: nowrap; }
+  .feed-link:hover .what, .feed-link:focus-visible .what { text-decoration: underline; }
+  .cheer-photo { margin-top: 10px; }
+  .cheer-photo img { display: block; width: 100%; max-height: 520px; object-fit: cover; border-radius: 12px; background: var(--line); }
+  .react { border: 1.5px solid var(--line); background: var(--card, #fff); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 15px; cursor: pointer; min-height: 36px; }
+  .react.on { border-color: var(--green); background: #e7f3ea; font-weight: 700; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+  .check input { width: 22px; height: 22px; flex: none; margin-top: 1px; }
+  @keyframes flash { 0%, 60% { box-shadow: 0 0 0 4px var(--gold); } 100% { box-shadow: none; } }
+  .flash { animation: flash 2.4s ease-out; }
 
   .task { border-left: 5px solid var(--gold); }
   .task.claimed { border-left-color: var(--blue); }
@@ -323,15 +335,22 @@ const ui = {
 // Every form in the hub gets a data-draft key. As you type we keep a copy, and when the
 // page redraws (new info from the crew, a refresh) we put your words right back.
 const fieldsOf = form => [...form.elements].filter(el => /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type !== "hidden" && el.type !== "file");
+// Fields are matched by name (or by position among unnamed fields), so a form that grows
+// a new box, like the photo checkbox on Cheers, still gets your words back.
+const fieldKeys = form => { let n = 0; return fieldsOf(form).map(el => [el.name ? "n:" + el.name + (el.type === "radio" ? ":" + el.value : "") : "i:" + (n++), el]); };
 function saveDraft(form) {
   const key = form.dataset.draft; if (!key) return;
-  ui.drafts[key] = fieldsOf(form).map(el => el.type === "checkbox" || el.type === "radio" ? el.checked : el.value);
+  const d = {};
+  fieldKeys(form).forEach(([k, el]) => { d[k] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value; });
+  ui.drafts[key] = d;
 }
 function restoreDrafts(root) {
   root.querySelectorAll("form[data-draft]").forEach(form => {
     const d = ui.drafts[form.dataset.draft]; if (!d) return;
-    const els = fieldsOf(form); if (els.length !== d.length) return;
-    els.forEach((el, i) => { if (el.type === "checkbox" || el.type === "radio") el.checked = d[i]; else el.value = d[i]; });
+    fieldKeys(form).forEach(([k, el]) => {
+      if (!(k in d)) return;
+      if (el.type === "checkbox" || el.type === "radio") el.checked = d[k]; else el.value = d[k];
+    });
   });
 }
 const draftEvent = e => { const f = e.target && e.target.closest && e.target.closest("form[data-draft]"); if (f) saveDraft(f); };
@@ -346,7 +365,7 @@ document.addEventListener("touchstart", () => { lastPointer = Date.now(); }, { c
 const userBusy = () => isEditing() || Date.now() - lastPointer < 1500 || ui.inflight > 0;
 function schedulePending() {
   if (ui.pendingTimer) return;
-  ui.pendingTimer = setTimeout(() => { ui.pendingTimer = null; if (ui.pendingRender) render(); }, 1600);
+  ui.pendingTimer = setTimeout(() => { ui.pendingTimer = null; if (ui.pendingRender) render(false); }, 1600);
 }
 
 /* ---------- API ---------- */
@@ -505,12 +524,13 @@ function go(tab, extra) { Object.assign(ui, extra || {}); ui.tab = tab; render()
 
 /* ---------- render shell ---------- */
 const TABS = [
-  ["home", "🏠 Home"], ["chat", "💬 Chat"], ["tasks", "✅ Tasks"], ["families", "🎁 Families"], ["routes", "🛷 Routes"], ["crew", "🧝 Crew"], ["stories", "📣 Stories"], ["print", "🖨️ Printables"]
+  ["home", "🏠 Home"], ["chat", "💬 Chat"], ["cheers", "🎉 Cheers"], ["tasks", "✅ Tasks"], ["families", "🎁 Families"], ["routes", "🛷 Routes"], ["crew", "🧝 Crew"], ["stories", "📣 Stories"], ["print", "🖨️ Printables"]
 ];
 function render(force) {
   if (!S || !me) return;
-  // Background refreshes wait until you're done typing or tapping; your own actions show right away.
-  if (!force && userBusy()) { ui.pendingRender = true; schedulePending(); return; }
+  // render(false) = a background refresh: it waits until you're done typing or tapping.
+  // Anything you tap yourself (render() or render(true)) shows right away.
+  if (force === false && userBusy()) { ui.pendingRender = true; schedulePending(); return; }
   if (isEditing()) document.activeElement.blur();
   ui.pendingRender = false;
   $("#me-name").textContent = "Hi, " + firstName(me.name) + "!";
@@ -519,13 +539,14 @@ function render(force) {
     tasks: S.tasks.filter(t => t.status === "Open").length,
     families: me.isAdopt ? S.families.filter(f => f.status === "Pending review").length : 0,
     crew: me.isLead ? S.crew.filter(c => c.access === "Pending").length : 0,
-    chat: ui.tab === "chat" ? 0 : unreadTotal()
+    chat: ui.tab === "chat" ? 0 : unreadTotal(),
+    cheers: ui.tab === "cheers" ? 0 : unseenCheers()
   };
   $("#tabs").replaceChildren(...TABS.map(([id, label]) => h("button", {
     class: "tab", role: "tab", "aria-selected": String(ui.tab === id), onclick: () => go(id)
   }, label, counts[id] ? h("span", { class: "count", text: counts[id] }) : null)));
   const y = window.scrollY;
-  const view = { home: viewHome, chat: viewChat, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories, print: viewPrint }[ui.tab]();
+  const view = { home: viewHome, chat: viewChat, cheers: viewCheers, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories, print: viewPrint }[ui.tab]();
   $("#view").replaceChildren(view);
   restoreDrafts(view);
   window.scrollTo({ top: y });
@@ -567,11 +588,58 @@ function viewHome() {
     mine.length ? h("div", null,
       h("div", { class: "section-title" }, h("h2", null, "On your plate")),
       h("div", { class: "stack" }, mine.map(taskCard))) : null,
-    h("div", { class: "section-title" }, h("h2", null, "What the crew's been up to")),
-    h("div", { class: "card" }, S.log.length ? S.log.slice(0, 20).map(l => h("div", { class: "feed-item" },
-      h("b", null, firstName(l.who)), " ", l.what, " ", h("span", { class: "tiny muted", text: "· " + ago(l.when) })))
-      : h("div", { class: "empty", text: "Nothing yet. Be the first!" }))
+    activityFeed()
   );
+}
+
+/* ---------- activity feed: tap a line to go there, tap a name to see everything they've done ---------- */
+const sameWho = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+function feedTarget(l) {
+  const tm = l.what.match(/“([^”]+)”/);
+  if (tm) {
+    const t = S.tasks.slice().reverse().find(x => x.title === tm[1]);
+    if (t) return { label: "See task", go: () => goTask(t) };
+  }
+  const idm = l.what.match(/\b((?:KS|SB)-\d+)/);
+  if (idm) {
+    const f = famById(idm[1]);
+    return f ? { label: "Open " + idm[1], go: () => goFamily(f.id) } : { label: "", gone: true };
+  }
+  if (/^(welcomed|updated|re-sent|sent a new ELF code)|New volunteer/.test(l.what)) return { label: "Crew", go: () => go("crew") };
+  if (/Cheers wall|shout-out/.test(l.what)) return { label: "Cheers", go: () => go("cheers") };
+  return null;
+}
+function goTask(t) {
+  ui.tab = "tasks"; ui.taskArea = ""; ui.taskFilter = "all"; render(true);
+  setTimeout(() => { const el = document.getElementById("task-" + t.id); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("flash"); } }, 30);
+}
+function showActivity(who) {
+  ui.feedWho = who; ui.feedMore = false; ui.tab = "home"; render(true);
+  setTimeout(() => { const el = document.getElementById("activity"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 30);
+}
+function activityFeed() {
+  const who = ui.feedWho;
+  const all = who ? S.log.filter(l => sameWho(l.who, who)) : S.log;
+  const shown = all.slice(0, ui.feedMore ? 250 : who ? 40 : 20);
+  const line = l => {
+    const tgt = feedTarget(l);
+    const name = l.who === "Sign-up page" ? h("b", null, "Sign-up page") : who ? h("b", null, firstName(l.who))
+      : h("button", { class: "feed-who", title: "See everything " + firstName(l.who) + "'s done", onclick: e => { e.stopPropagation(); showActivity(l.who); } }, firstName(l.who));
+    const when = h("span", { class: "tiny muted", text: " · " + ago(l.when) });
+    if (tgt && tgt.go) return h("div", { class: "feed-item" }, name, " ",
+      h("button", { class: "feed-link", style: "display:inline;width:auto", onclick: tgt.go },
+        h("span", { class: "what", text: l.what }), when, " ", h("span", { class: "go tiny", text: "→ " + tgt.label })));
+    return h("div", { class: "feed-item" }, name, " ", h("span", { text: l.what }), when,
+      tgt && tgt.gone ? h("span", { class: "tiny muted", text: " (removed)" }) : null);
+  };
+  return h("div", { id: "activity" },
+    h("div", { class: "section-title" },
+      h("h2", null, who ? "🔎 What " + firstName(who) + "'s been up to" : "What the crew's been up to"),
+      who ? h("button", { class: "btn sm ghost", onclick: () => { ui.feedWho = null; render(true); } }, "← Everyone") : null),
+    who ? null : h("p", { class: "small muted", style: "margin:-4px 0 8px" }, "Tap a line to jump to that family or task. Tap a name to see everything they've done."),
+    h("div", { class: "card" }, shown.length ? shown.map(line)
+      : h("div", { class: "empty", text: who ? firstName(who) + " hasn't done anything in the hub yet." : "Nothing yet. Be the first!" }),
+      all.length > shown.length ? h("div", { style: "margin-top:8px" }, h("button", { class: "btn sm ghost", onclick: () => { ui.feedMore = true; render(true); } }, "Show more (" + (all.length - shown.length) + ")")) : null));
 }
 // Leads and Adoption ELVES: everything that's slipping, in one place.
 const DAY = 86400000;
@@ -698,7 +766,7 @@ function newTaskForm() {
 function taskCard(t) {
   const mineT = t.claimedBy === me.name;
   const cls = "card task" + (t.status === "Claimed" ? " claimed" : "") + (t.status === "Done" ? " done" : "");
-  return h("div", { class: cls },
+  return h("div", { class: cls, id: "task-" + t.id },
     h("div", { class: "row" },
       h("div", { class: "grow" },
         h("h3", { text: (t.status === "Done" ? "✅ " : "") + t.title }),
@@ -1160,7 +1228,8 @@ function crewCard(c) {
         : c.access === "Approved" && !c.me ? h("span", { class: "badge b-red", style: "margin-left:auto", text: "Never signed in" }) : null),
     c.wants ? h("div", { class: "small", style: "margin-top:4px", text: c.wants }) : null,
     h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
-    c.me ? null : h("div", { style: "margin-top:8px" }, telLinks(c.phone, c.email)));
+    h("div", { class: "row", style: "margin-top:8px" }, c.me ? null : telLinks(c.phone, c.email),
+      c.access === "Approved" ? h("button", { class: "btn ghost sm", onclick: () => showActivity(c.name) }, "🔎 What " + (c.me ? "I've" : firstName(c.name) + "'s") + " been up to") : null));
   if (me.isLead && !c.me) {
     const form = h("form", { class: "grid2", "data-draft": "crew:" + c.row, style: "margin-top:10px", onsubmit: async e => {
         e.preventDefault(); const fd = new FormData(form);
@@ -1251,6 +1320,107 @@ function removeCrewDialog(c) {
             : ["Stepped away", "Not a good fit", "Duplicate", "Other"],
     pending ? "Decline" : "Remove from crew",
     async reason => { await api("crew_remove", { row: c.row, name: c.name, reason }, true); toast(pending ? "Declined." : c.name + " removed."); });
+}
+
+/* ================= CHEERS ================= */
+// A wall just for the crew: photos from wrapping night, shout-outs, good news.
+// Never families: the hub asks every photo poster to confirm no one we serve is in it.
+const CHEER_EMOJI = ["🎉", "❤️", "🎅", "🙌", "😂"];
+const cheerPhotos = {};   // id -> object URL, loaded once per visit
+function unseenCheers() {
+  const c = S && S.cheers ? S.cheers : [];
+  return c.filter(x => x.whoId !== me.id && (!seen.cheers || x.when > seen.cheers)).length;
+}
+function markCheersSeen() {
+  const last = (S.cheers || []).map(x => x.when).sort().pop();
+  if (last && last !== seen.cheers) { seen.cheers = last; try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {} }
+}
+async function shrinkPhoto(file) {
+  let src;
+  try { src = await createImageBitmap(file); }
+  catch (e) {
+    src = await new Promise((res, rej) => { const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => { URL.revokeObjectURL(url); res(img); }; img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); }; img.src = url; });
+  }
+  const w = src.width || src.naturalWidth, hgt = src.height || src.naturalHeight, k = Math.min(1, 1400 / Math.max(w, hgt));
+  const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(hgt * k);
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
+  if (!blob) throw new Error("encode");
+  const data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+  return { type: "image/jpeg", data, preview: URL.createObjectURL(blob) };
+}
+function cheerImg(x) {
+  const box = h("div", { class: "cheer-photo" });
+  const show = url => box.replaceChildren(h("img", { src: url, alt: "Photo shared by " + firstName(x.who), loading: "lazy" }));
+  if (cheerPhotos[x.id]) show(cheerPhotos[x.id]);
+  else {
+    box.append(h("div", { class: "small muted", text: "Loading photo…" }));
+    postHub({ type: "hub", action: "cheer_photo", login: (cred || memCred).login, code: (cred || memCred).code, id: x.id }, 2)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        const bin = atob(res.data), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        cheerPhotos[x.id] = URL.createObjectURL(new Blob([arr], { type: res.type || "image/jpeg" }));
+        if (box.isConnected) show(cheerPhotos[x.id]);
+        else document.querySelectorAll('[data-cheer="' + x.id + '"] .cheer-photo').forEach(b => b.replaceChildren(h("img", { src: cheerPhotos[x.id], alt: "", loading: "lazy" })));
+      })
+      .catch(() => { box.replaceChildren(h("div", { class: "small muted", text: "Couldn't load this photo. Pull to refresh to try again." })); });
+  }
+  return box;
+}
+function cheerCard(x) {
+  const mine = x.whoId === me.id;
+  return h("div", { class: "card cheer", "data-cheer": x.id },
+    h("div", { class: "row" },
+      h("b", { text: x.who === me.name ? "You" : firstName(x.who) }),
+      x.shout ? h("span", { class: "badge b-pending", text: "🎉 shout-out to " + (x.shout === me.name ? "you!" : firstName(x.shout)) }) : null,
+      h("span", { class: "tiny muted", style: "margin-left:auto", text: ago(x.when) })),
+    x.text ? h("p", { style: "margin:8px 0 0;white-space:pre-wrap", text: x.text }) : null,
+    x.photo ? cheerImg(x) : null,
+    h("div", { class: "row", style: "margin-top:10px" },
+      CHEER_EMOJI.map(e => h("button", { class: "react" + (x.mine.includes(e) ? " on" : ""), "aria-pressed": String(x.mine.includes(e)), title: "React " + e,
+        onclick: ev => act(ev.currentTarget, "cheer_react", { id: x.id, emoji: e }) }, e, x.counts[e] ? h("span", { text: " " + x.counts[e] }) : null)),
+      mine || me.isLead ? h("button", { class: "btn ghost sm", style: "margin-left:auto", onclick: ev => { if (confirmInline(ev.currentTarget, "Remove?")) act(ev.currentTarget, "cheer_delete", { id: x.id }); } }, mine ? "Remove" : "Remove (Lead)") : null));
+}
+function viewCheers() {
+  markCheersSeen();
+  const crew = S.crew.filter(c => c.access === "Approved" && c.elfId && c.elfId !== me.id);
+  const pv = ui.cheerPhoto;
+  const fileIn = h("input", { type: "file", accept: "image/*", style: "display:none", onchange: async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try { ui.cheerPhoto = await shrinkPhoto(f); ui.cheerPhotoOk = false; render(true); }
+      catch (err) { toast("Couldn't read that photo. Try a different one.", true); }
+    } });
+  const form = h("form", { class: "card stack", "data-draft": "cheer", onsubmit: async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const text = String(fd.get("text") || "").trim();
+      if (!text && !ui.cheerPhoto) { toast("Write a cheer or add a photo first.", true); return; }
+      if (ui.cheerPhoto && !fd.get("photoOk")) { toast("Please check the box about the photo first.", true); return; }
+      const r = await act($("button[type=submit]", form), "cheer_post", { text, shout: fd.get("shout") || "", photoOk: !!fd.get("photoOk"),
+        photo: ui.cheerPhoto ? { type: ui.cheerPhoto.type, data: ui.cheerPhoto.data } : null });
+      if (r) { ui.cheerPhoto = null; render(true); }
+    } },
+    h("h3", null, "Share a cheer 🎉"),
+    h("textarea", { name: "text", maxlength: 600, rows: 2, placeholder: "Wrapped 40 gifts tonight! / Huge thanks to… / Look at this pile of donations!" }),
+    h("label", { class: "f" }, "Shout-out to an ELF (optional)",
+      h("select", { name: "shout" }, opt("", "No one in particular"), crew.map(c => opt(c.elfId, c.name)))),
+    pv ? h("div", { class: "stack" },
+      h("img", { src: pv.preview, alt: "Your photo", style: "max-width:100%;max-height:260px;border-radius:12px;object-fit:cover" }),
+      h("label", { class: "check" }, h("input", { type: "checkbox", name: "photoOk" }),
+        h("span", null, h("b", null, "No families or kids we serve are in this photo"), ", and no addresses, name tags or wish lists show.")),
+      h("button", { class: "btn ghost sm", type: "button", onclick: () => { ui.cheerPhoto = null; render(true); } }, "Remove photo")) : null,
+    h("div", { class: "row" },
+      h("button", { class: "btn ghost", type: "button", onclick: () => fileIn.click() }, pv ? "📷 Change photo" : "📷 Add a photo"), fileIn,
+      h("button", { class: "btn", type: "submit" }, "Post it")),
+    h("p", { class: "tiny muted", style: "margin:0" }, "Only signed-in ELVES can see this wall. It's for the crew: wrapping nights, donation hauls, Santa selfies. Never photos of the families we serve."));
+  const list = S.cheers || [];
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "🎉 Cheers"),
+      h("span", { class: "small muted", text: "Photos, shout-outs and good news from the crew" })),
+    form,
+    list.length ? list.map(cheerCard) : h("div", { class: "card empty" }, "No cheers yet. Be the first to share some Christmas spirit! 🎄"));
 }
 
 /* ================= CHAT ================= */
