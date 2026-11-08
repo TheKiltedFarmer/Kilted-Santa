@@ -666,7 +666,7 @@ function needsAttention() {
   const waiting = F.filter(awaitingReply);
   add(waiting.length, "💬", plural(waiting.length, "adopter is", "adopters are") + " waiting on a reply",
     idList(waiting) + " · they wrote in from the sign-up page. Reply from the family's card.", "Reply", () => go("families", { famFilter: "messages" }));
-  const noHi = adopted.filter(f => f.adopter && !f.contacted && !(f.thread || []).some(x => x.from === "crew") && !S.tasks.some(t => t.family === f.id && /^🤝 /.test(t.title)));
+  const noHi = adopted.filter(f => f.adopter && !f.contacted && !(f.thread || []).some(x => x.from === "crew" && !/^📣/.test(x.text)) && !S.tasks.some(t => t.family === f.id && /^🤝 /.test(t.title)));
   add(noHi.length, "🤝", plural(noHi.length, "adopter hasn't", "adopters haven't") + " heard from an ELF",
     idList(noHi) + " · one tap puts a \"say hi\" task on the board for each", "Add tasks", b => act(b, "adopter_tasks", {}));
   const notTold = adopted.filter(f => !f.told);
@@ -842,6 +842,28 @@ function taskDoneForm(t) {
       h("button", { class: "btn sm ghost", type: "button", onclick: () => { ui.taskDone = null; render(true); } }, "Cancel")));
   return form;
 }
+// Leads: one message to every current adopter. Each person gets one email naming all their families.
+async function broadcastDialog() {
+  let recips = [];
+  try { const r = await api("adopters_broadcast", { send: false }, true); recips = (r.extra && r.extra.recipients) || []; }
+  catch (e) { toast("Couldn't load the adopter list. Try again.", true); return; }
+  const subj = h("input", { type: "text", maxlength: 150, value: ui.bcSubject || "" , oninput: e => { ui.bcSubject = e.target.value; } });
+  const body = h("textarea", { rows: 10, maxlength: 3000, oninput: e => { ui.bcText = e.target.value; } }); body.value = ui.bcText || "";
+  const btn = h("button", { class: "btn", onclick: async () => {
+      if (!subj.value.trim() || !body.value.trim()) { toast("Add a subject and a message.", true); return; }
+      if (!btn.dataset.armed) { btn.dataset.armed = "1"; btn.textContent = "Tap again to send to " + recips.length; return; }
+      const r = await act(btn, "adopters_broadcast", { send: true, subject: subj.value.trim(), text: body.value.trim() });
+      if (r) { ui.bcSubject = ""; ui.bcText = ""; close(); }
+    } }, "📣 Send to " + recips.length + " adopter" + (recips.length === 1 ? "" : "s"));
+  const close = modal(
+    h("h3", null, "📣 Email every adopter"),
+    h("p", { class: "small muted" }, "Each person gets one email, starting \"Hi Sally!\". Write ", h("b", null, "{families}"), " and it becomes their family number(s), like \"Family KS-002\". A link for messaging the crew is added at the bottom automatically. Replies come back to the hub."),
+    h("label", { class: "f" }, "Subject", subj),
+    h("label", { class: "f", style: "margin-top:8px" }, "Message", body),
+    h("details", { style: "margin-top:8px" }, h("summary", { class: "small" }, "Who gets it (" + recips.length + ")"),
+      h("ul", { class: "small", style: "margin:6px 0 0;padding-left:18px" }, recips.map(x => h("li", { text: x.name + " · " + x.families.join(", ") + (x.email ? "" : " · ⚠️ no email, call " + (x.phone || "them")) })))),
+    h("div", { class: "row", style: "margin-top:10px" }, btn));
+}
 // Messages between the adopter and the crew. Adopters write from the sign-up page;
 // ELVES reply here and it's emailed to them. Nothing lands in anyone's personal inbox.
 const awaitingReply = f => (f.thread || []).length && f.thread[f.thread.length - 1].from === "adopter";
@@ -893,6 +915,7 @@ function viewFamilies() {
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Families"),
       h("span", { class: "small muted", text: me.isAdopt ? "You can see private details. Please keep them in the hub." : "Parent names and addresses stay with the adoption team." })),
+    me.isLead && F.some(f => f.status === "Adopted") ? h("div", null, h("button", { class: "btn ghost sm", onclick: broadcastDialog }, "📣 Email all adopters")) : null,
     h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.famFilter === v),
       onclick: () => { ui.famFilter = v; render(); } }, l + " (" + F.filter(f => inFilter(f, v)).length + ")"))),
     search,
