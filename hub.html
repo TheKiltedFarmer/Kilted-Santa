@@ -315,20 +315,82 @@ function clearCred() { try { localStorage.removeItem(STORE_KEY); sessionStorage.
 let cred = null, me = null, S = null, memCred = null;
 const ui = {
   tab: "home", famFilter: null, famSearch: "", open: new Set(), taskFilter: "open", taskArea: "",
-  newTask: null, storiesAll: false, crewWants: "", pendingRender: false, busy: false
+  newTask: null, storiesAll: false, crewWants: "", pendingRender: false, busy: false,
+  drafts: {}, inflight: 0, lastSubmit: null
 };
 
+/* ---------- drafts: whatever you've typed survives refreshes ---------- */
+// Every form in the hub gets a data-draft key. As you type we keep a copy, and when the
+// page redraws (new info from the crew, a refresh) we put your words right back.
+const fieldsOf = form => [...form.elements].filter(el => /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type !== "hidden" && el.type !== "file");
+function saveDraft(form) {
+  const key = form.dataset.draft; if (!key) return;
+  ui.drafts[key] = fieldsOf(form).map(el => el.type === "checkbox" || el.type === "radio" ? el.checked : el.value);
+}
+function restoreDrafts(root) {
+  root.querySelectorAll("form[data-draft]").forEach(form => {
+    const d = ui.drafts[form.dataset.draft]; if (!d) return;
+    const els = fieldsOf(form); if (els.length !== d.length) return;
+    els.forEach((el, i) => { if (el.type === "checkbox" || el.type === "radio") el.checked = d[i]; else el.value = d[i]; });
+  });
+}
+const draftEvent = e => { const f = e.target && e.target.closest && e.target.closest("form[data-draft]"); if (f) saveDraft(f); };
+document.addEventListener("input", draftEvent, true);
+document.addEventListener("change", draftEvent, true);
+document.addEventListener("submit", e => { const f = e.target.closest && e.target.closest("form[data-draft]"); ui.lastSubmit = f ? f.dataset.draft : null; if (f) saveDraft(f); setTimeout(() => { ui.lastSubmit = null; }, 0); }, true);
+
+// Don't redraw the page out from under someone who's tapping or typing.
+let lastPointer = 0;
+document.addEventListener("pointerdown", () => { lastPointer = Date.now(); }, true);
+document.addEventListener("touchstart", () => { lastPointer = Date.now(); }, { capture: true, passive: true });
+const userBusy = () => isEditing() || Date.now() - lastPointer < 1500 || ui.inflight > 0;
+function schedulePending() {
+  if (ui.pendingTimer) return;
+  ui.pendingTimer = setTimeout(() => { ui.pendingTimer = null; if (ui.pendingRender) render(); }, 1600);
+}
+
 /* ---------- API ---------- */
+// Phones drop connections. Try up to 3 times; each save carries an id so the server
+// never does the same thing twice if an earlier try actually got through.
+const newRid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+async function postHub(body, tries) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 40000);
+      const r = await fetch(CONFIG.SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), signal: ctl.signal });
+      const text = await r.text(); clearTimeout(timer);
+      return JSON.parse(text);
+    } catch (e) {
+      if (i < tries - 1) await new Promise(r => setTimeout(r, 1200 * (i + 1)));
+    }
+  }
+  const err = new Error("We couldn't reach the hub, so that didn't save. Check your signal and try again. Your typing is still there.");
+  err.net = true; throw err;
+}
+let reqSeq = 0, appliedSeq = 0;
 async function api(action, payload = {}, quiet) {
   const c = cred || memCred;
-  const res = await fetch(CONFIG.SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ type: "hub", action, login: c.login, code: c.code, ...payload })
-  }).then(r => r.json());
+  const my = ++reqSeq, saving = action !== "state";
+  const draftKey = saving ? ui.lastSubmit : null;   // the form this save came from, if any
+  if (saving) ui.inflight++;
+  let res;
+  try {
+    res = await postHub({ type: "hub", action, login: c.login, code: c.code, rid: saving ? newRid() : "", ...payload }, saving ? 3 : 1);
+  } catch (e) {
+    if (!quiet) toast(e.message, true);
+    throw e;
+  } finally { if (saving) ui.inflight--; }
   if (res.auth === false) { logout(res.error); throw new Error(res.error); }
   if (!res.ok) { if (!quiet) toast(res.error || "Something went wrong.", true); throw new Error(res.error); }
-  if (res.state) { S = res.state; S.chat = S.chat || []; me = res.me; render(!quiet || action !== "state"); }
+  if (draftKey) delete ui.drafts[draftKey];
+  // A slow background refresh that started before this save must not overwrite it.
+  if (res.state && (saving || my > appliedSeq)) {
+    appliedSeq = Math.max(appliedSeq, my);
+    const oldChat = S && S.chat ? S.chat : [];
+    S = res.state; S.chat = S.chat || []; me = res.me; mergeChat(oldChat);
+    render(!quiet || saving);
+  }
   if (res.msg && !quiet) toast(res.msg);
   return res;
 }
@@ -418,7 +480,7 @@ function isEditing() {
   const a = document.activeElement;
   return a && $("#view").contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
 }
-document.addEventListener("focusout", () => setTimeout(() => { if (ui.pendingRender && !isEditing()) render(); }, 50));
+document.addEventListener("focusout", () => { if (ui.pendingRender) schedulePending(); });
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast("Copied! Paste it anywhere 📋"); }
   catch (e) {
@@ -447,11 +509,9 @@ const TABS = [
 ];
 function render(force) {
   if (!S || !me) return;
-  if (isEditing()) {
-    // Background refreshes wait until you're done typing; your own actions show right away.
-    if (!force) { ui.pendingRender = true; return; }
-    document.activeElement.blur();
-  }
+  // Background refreshes wait until you're done typing or tapping; your own actions show right away.
+  if (!force && userBusy()) { ui.pendingRender = true; schedulePending(); return; }
+  if (isEditing()) document.activeElement.blur();
   ui.pendingRender = false;
   $("#me-name").textContent = "Hi, " + firstName(me.name) + "!";
   $("#me-role").textContent = me.role;
@@ -467,6 +527,7 @@ function render(force) {
   const y = window.scrollY;
   const view = { home: viewHome, chat: viewChat, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories, print: viewPrint }[ui.tab]();
   $("#view").replaceChildren(view);
+  restoreDrafts(view);
   window.scrollTo({ top: y });
 }
 
@@ -615,7 +676,7 @@ function viewTasks() {
 }
 function newTaskForm() {
   const pre = ui.newTask || {};
-  const form = h("form", { class: "card stack", style: "border:2px solid var(--gold)", onsubmit: async e => {
+  const form = h("form", { class: "card stack", "data-draft": "newtask", style: "border:2px solid var(--gold)", onsubmit: async e => {
       e.preventDefault();
       const fd = new FormData(form);
       const btn = $("button[type=submit]", form);
@@ -801,7 +862,7 @@ function famBody(f) {
             : h("button", { class: "btn ghost sm", onclick: () => copyText("Here's Family " + f.id + "'s wish list anytime: " + S.publicUrl + "#mylist (enter " + f.id + " and the phone number you adopted with)") }, "📋 Copy wish-list link to text"),
           h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Release?")) act(e.currentTarget, "fam_release", { familyId: f.id }); } }, "Release back to Adopt page"))));
     } else if (f.status === "Available") {
-      const form = h("form", { class: "block stack", onsubmit: async e => {
+      const form = h("form", { class: "block stack", "data-draft": "adopter:" + f.id, onsubmit: async e => {
           e.preventDefault(); const fd = new FormData(form);
           await act($("button[type=submit]", form), "fam_adopter", { familyId: f.id, name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email"), connection: fd.get("connection"), giftPlan: fd.get("giftPlan") });
         } },
@@ -823,7 +884,7 @@ function famBody(f) {
   body.append(routeEditor(f));
 
   // Team notes
-  const noteForm = h("form", { class: "row", onsubmit: async e => {
+  const noteForm = h("form", { class: "row", "data-draft": "note:" + f.id, onsubmit: async e => {
       e.preventDefault(); const inp = $("input", noteForm); if (!inp.value.trim()) return;
       const r = await act($("button", noteForm), "fam_note", { familyId: f.id, note: inp.value });
       if (r) inp.value = "";
@@ -844,7 +905,7 @@ function famBody(f) {
 function routeEditor(f) {
   if (!me.isAdopt) return h("div", { class: "small muted", text: f.team ? "🛷 On " + f.team + (f.stop ? ", stop " + f.stop : "") : "🛷 Not on a route yet" });
   const teams = teamNames();
-  const form = h("form", { class: "row", onsubmit: async e => {
+  const form = h("form", { class: "row", "data-draft": "route:" + f.id, onsubmit: async e => {
       e.preventDefault(); const fd = new FormData(form);
       await act($("button", form), "fam_route", { familyId: f.id, team: fd.get("team"), stop: fd.get("stop") });
     } },
@@ -908,7 +969,7 @@ function swingBody(f) {
     h("select", { onchange: e => act(null, "fam_status", { familyId: f.id, status: e.target.value }) },
       [["Swing-by request", "Swing-by request"], ["Delivered", "Visited"], ["Not listed", "Can't make it / not listed"]].map(([v, l]) => opt(v, l, v === f.status))))));
   body.append(routeEditor(f));
-  const noteForm = h("form", { class: "row", onsubmit: async e => {
+  const noteForm = h("form", { class: "row", "data-draft": "note:" + f.id, onsubmit: async e => {
       e.preventDefault(); const inp = $("input", noteForm); if (!inp.value.trim()) return;
       const r = await act($("button", noteForm), "fam_note", { familyId: f.id, note: inp.value }); if (r) inp.value = "";
     } },
@@ -971,7 +1032,7 @@ function viewRoutes() {
   const myTeam = (me.team || "").trim();
   const ordered = myTeam ? [myTeam, ...teams.filter(t => t.toLowerCase() !== myTeam.toLowerCase())] : teams;
 
-  const selfForm = h("form", { class: "stack", onsubmit: async e => {
+  const selfForm = h("form", { class: "stack", "data-draft": "selfteam", onsubmit: async e => {
       e.preventDefault();
       await act($("button", selfForm), "crew_update", { row: me.row, name: me.name, team: $("input[type=text]", selfForm).value, randomOk: $("input[type=checkbox]", selfForm).checked });
     } },
@@ -1066,7 +1127,7 @@ function viewCrew() {
     me.isLead && paused.length ? h("div", { class: "stack" }, h("h3", { style: "font-size:19px;margin-top:8px", text: "Paused" }), paused.map(crewCard)) : null);
 }
 function pendingCard(c) {
-  const form = h("form", { class: "card stack", style: "border:2px solid var(--gold)", onsubmit: async e => {
+  const form = h("form", { class: "card stack", "data-draft": "pending:" + c.row, style: "border:2px solid var(--gold)", onsubmit: async e => {
       e.preventDefault(); const fd = new FormData(form);
       const r = await act($("button[type=submit]", form), "crew_approve", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team") });
       if (r && r.extra) { toast(firstName(c.name) + " is on the crew! 🎉"); showCode(r.extra); }
@@ -1101,7 +1162,7 @@ function crewCard(c) {
     h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
     c.me ? null : h("div", { style: "margin-top:8px" }, telLinks(c.phone, c.email)));
   if (me.isLead && !c.me) {
-    const form = h("form", { class: "grid2", style: "margin-top:10px", onsubmit: async e => {
+    const form = h("form", { class: "grid2", "data-draft": "crew:" + c.row, style: "margin-top:10px", onsubmit: async e => {
         e.preventDefault(); const fd = new FormData(form);
         await act($("button[type=submit]", form), "crew_update", { row: c.row, name: c.name, role: fd.get("role"), team: fd.get("team"), access: fd.get("access") });
       } },
@@ -1232,15 +1293,20 @@ function viewChat() {
   const ta = h("textarea", { id: "chat-text", maxlength: 1000, placeholder: "Message " + cur.label.replace(/^\S+\s/, "") + "…", rows: 1,
     onkeydown: e => { if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(hover: hover)").matches) { e.preventDefault(); form.requestSubmit(); } } });
   const send = h("button", { class: "btn", type: "submit" }, "Send");
-  const form = h("form", { class: "chat-form", onsubmit: async e => {
+  const form = h("form", { class: "chat-form", "data-draft": "chat:" + cur.id, onsubmit: async e => {
       e.preventDefault();
-      const text = ta.value.trim(); if (!text) return;
-      send.disabled = true;
+      const box = document.getElementById("chat-text") || ta;
+      const text = box.value.trim(); if (!text) return;
+      const key = "chat:" + cur.id;
+      send.disabled = true; send.textContent = "Sending…"; ui.inflight++;
       try {
-        const res = await chatCall("chat_send", { channel: cur.id, to: cur.to || "", text });
-        mergeChat(res.chat); ta.value = ""; fillMessages(); ta.focus();
+        const res = await chatCall("chat_send", { channel: cur.id, to: cur.to || "", text, rid: newRid() });
+        delete ui.drafts[key];
+        mergeChat(res.chat);
+        const live = document.getElementById("chat-text"); if (live) { live.value = ""; live.focus(); }
+        fillMessages();
       } catch (ex) { toast(ex.message || "Message didn't send. Try again.", true); }
-      finally { send.disabled = false; }
+      finally { ui.inflight--; if (send.isConnected) { send.disabled = false; send.textContent = "Send"; } }
     } }, ta, send);
   const waiting = chans.filter(c => c.id !== ui.chatCh && unreadIn(c.id));
   return h("div", { class: "stack" },
@@ -1280,8 +1346,7 @@ function mergeChat(list) {
 async function chatCall(action, payload) {
   const c = cred || memCred;
   const since = S.chat.length ? S.chat[S.chat.length - 1].when : "";
-  const res = await fetch(CONFIG.SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ type: "hub", action, login: c.login, code: c.code, since, ...payload }) }).then(r => r.json());
+  const res = await postHub({ type: "hub", action, login: c.login, code: c.code, since, ...payload }, action === "chat_send" ? 3 : 1);
   if (res.auth === false) { logout(res.error); throw new Error(res.error); }
   if (!res.ok) throw new Error(res.error || "Something went wrong.");
   return res;
@@ -1373,7 +1438,7 @@ function viewPrint() {
     ["dropoff", "Be a gift drop-off spot"], ["gifts", "Donate new, unwrapped gifts"], ["wrap", "Donate wrapping supplies"],
     ["cards", "Donate gift cards"], ["adopt", "Adopt a family as a team"], ["share", "Share posts / hang a flyer"]
   ];
-  const form = h("form", { class: "card stack", onsubmit: async e => {
+  const form = h("form", { class: "card stack", "data-draft": "biz", onsubmit: async e => {
       e.preventDefault();
       const fd = new FormData(form);
       const biz = String(fd.get("biz") || "").trim();
