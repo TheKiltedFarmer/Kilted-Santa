@@ -154,6 +154,8 @@
   .pin.done { opacity: .55; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13px; }
   .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .updates { margin-top: 10px; border-left: 3px solid var(--line); padding-left: 10px; display: grid; gap: 8px; font-size: 14px; }
+  .linkish { background: none; border: 0; padding: 0; color: var(--green); text-decoration: underline; cursor: pointer; font: inherit; justify-self: start; }
   .cheer-photo { margin-top: 10px; }
   .cheer-photo img { display: block; width: 100%; max-height: 520px; object-fit: cover; border-radius: 12px; background: var(--line); }
   .react { border: 1.5px solid var(--line); background: var(--card, #fff); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 15px; cursor: pointer; min-height: 36px; }
@@ -785,13 +787,54 @@ function taskCard(t) {
         : t.status === "Claimed" ? h("span", { class: "badge b-available", text: (mineT ? "You've" : firstName(t.claimedBy) + " has") + " got it" })
         : h("span", { class: "badge b-adopted", text: "Done by " + firstName(t.claimedBy) })),
     t.details ? h("p", { class: "small", style: "margin:8px 0 0;white-space:pre-wrap", text: t.details }) : null,
+    taskUpdates(t),
+    ui.taskDone === t.id ? taskDoneForm(t) : ui.taskNote === t.id ? taskNoteForm(t) : null,
     h("div", { class: "row", style: "margin-top:10px" },
       t.status === "Open" ? h("button", { class: "btn sm", onclick: e => act(e.currentTarget, "task_claim", { taskId: t.id }) }, "🙋 I'll do it") : null,
-      t.status !== "Done" && (mineT || t.status === "Open") ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_done", { taskId: t.id }) }, "✅ Mark done") : null,
+      t.status !== "Done" && (mineT || t.status === "Open") && ui.taskDone !== t.id ? h("button", { class: "btn sm ghost", onclick: () => { ui.taskDone = t.id; ui.taskNote = null; render(true); } }, "✅ Mark done") : null,
+      ui.taskNote !== t.id && ui.taskDone !== t.id ? h("button", { class: "btn sm ghost", onclick: () => { ui.taskNote = t.id; ui.taskDone = null; ui.focusNote = true; render(true); } }, "📝 Add an update") : null,
       t.status === "Claimed" && (mineT || me.isLead) ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_unclaim", { taskId: t.id }) }, "Let someone else take it") : null,
-      t.status === "Claimed" && !mineT && !me.isLead ? h("span", { class: "small muted", text: "Want to help? Message " + firstName(t.claimedBy) + " on the Crew tab." }) : null,
+      t.status === "Claimed" && !mineT && !me.isLead ? h("span", { class: "small muted", text: "Want to help? Post an update, or message " + firstName(t.claimedBy) + " in Chat." }) : null,
       t.status === "Done" ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_reopen", { taskId: t.id }) }, "Reopen") : null,
       (t.createdBy === me.name || me.isLead) ? h("button", { class: "btn sm ghost", style: "margin-left:auto", onclick: e => { if (confirmInline(e.currentTarget, "Delete?")) act(e.currentTarget, "task_delete", { taskId: t.id }); } }, "Delete") : null));
+}
+// Progress notes on a task: who did what, newest at the bottom.
+function taskUpdates(t) {
+  const u = t.updates || [];
+  if (!u.length) return null;
+  const open = ui.taskAll && ui.taskAll[t.id], list = open ? u : u.slice(-3);
+  return h("div", { class: "updates" },
+    u.length > list.length ? h("button", { class: "linkish small", onclick: () => { ui.taskAll = ui.taskAll || {}; ui.taskAll[t.id] = true; render(true); } }, "Show all " + u.length + " updates") : null,
+    list.map(x => h("div", { class: "update" },
+      h("b", { text: x.who === me.name ? "You" : firstName(x.who) }), " ",
+      h("span", { class: "tiny muted", text: ago(x.when) }),
+      h("div", { style: "white-space:pre-wrap", text: x.text }))));
+}
+function taskNoteForm(t) {
+  const form = h("form", { class: "stack", "data-draft": "tasknote:" + t.id, style: "margin-top:10px", onsubmit: async e => {
+      e.preventDefault();
+      const note = $("textarea", form).value.trim();
+      if (!note) { toast("Write an update first.", true); return; }
+      const r = await act($("button[type=submit]", form), "task_note", { taskId: t.id, note });
+      if (r) { ui.taskNote = null; render(true); }
+    } },
+    h("textarea", { rows: 2, maxlength: 500, placeholder: "What's the latest? e.g. Called Kroger, they're donating 20 gift bags. Still waiting on Meijer." }),
+    h("div", { class: "row" }, h("button", { class: "btn sm", type: "submit" }, "Post update"),
+      h("button", { class: "btn sm ghost", type: "button", onclick: () => { ui.taskNote = null; delete ui.drafts["tasknote:" + t.id]; render(true); } }, "Cancel")));
+  if (ui.focusNote) { ui.focusNote = false; setTimeout(() => { const ta = form.querySelector("textarea"); if (ta) ta.focus(); }, 0); }
+  return form;
+}
+function taskDoneForm(t) {
+  const form = h("form", { class: "stack", "data-draft": "taskdone:" + t.id, style: "margin-top:10px", onsubmit: async e => {
+      e.preventDefault();
+      const r = await act($("button[type=submit]", form), "task_done", { taskId: t.id, note: $("textarea", form).value.trim() });
+      if (r) { ui.taskDone = null; render(true); }
+    } },
+    h("label", { class: "f" }, "What got done? (optional, but it helps the crew)",
+      h("textarea", { rows: 2, maxlength: 500, placeholder: "e.g. Dropped 3 boxes at the church. Kroger gave 20 bags. Meijer said no." })),
+    h("div", { class: "row" }, h("button", { class: "btn sm", type: "submit" }, "✅ Finish it"),
+      h("button", { class: "btn sm ghost", type: "button", onclick: () => { ui.taskDone = null; render(true); } }, "Cancel")));
+  return form;
 }
 function confirmInline(btn, label) {
   if (btn.dataset.armed) return true;
