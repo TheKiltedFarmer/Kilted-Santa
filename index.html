@@ -224,6 +224,17 @@
   .area-note { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--gold); font-size: 15px; }
 
   .mylist-card { margin-bottom: 18px; padding: 14px 16px; }
+  .thanks-wall { margin-top: 28px; }
+  .thanks-wall h2 { text-align: center; margin: 0 0 4px; }
+  .thanks-wall > .hint { text-align: center; margin: 0 auto 16px; max-width: 560px; }
+  .thanks-wall h3 { margin: 18px 0 8px; font-size: 18px; }
+  .ty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .ty { background: var(--surface, #fff); border: 1.5px solid #e4e9e4; border-radius: 14px; padding: 12px 14px; }
+  .ty.sponsor { border: 2px solid var(--gold); background: linear-gradient(135deg, #fff, #fdf6e6); }
+  .ty b { display: block; font-size: 16px; }
+  .ty .gave { margin-top: 4px; font-size: 14px; }
+  .ty .note { margin-top: 4px; font-size: 14px; font-style: italic; color: var(--ink-soft); }
+  .ty a { font-size: 14px; }
   .crew-msgs { margin-top: 14px; }
   .crew-msgs h3 { margin: 0 0 8px; }
   .crew-msgs textarea { width: 100%; margin-top: 8px; }
@@ -578,6 +589,14 @@
     </form>
   </section>
 </main>
+
+<section class="wrap thanks-wall" id="thanks" hidden aria-labelledby="thanks-title">
+  <h2 id="thanks-title">💚 Thank you, neighbors!</h2>
+  <p class="hint">These local businesses, churches and sponsors are helping make Christmas happen for families in Jackson County. Please thank them with your business!</p>
+  <div id="thanks-drop"></div>
+  <div id="thanks-sponsors"></div>
+  <div id="thanks-local"></div>
+</section>
 
 <footer class="wrap">
   <div id="cfg-footer"></div>
@@ -1239,6 +1258,37 @@ $("#f-volunteer").addEventListener("submit", e => {
     ]);
   });
 });
+
+/* ---------- thank-you wall: businesses and sponsors who said it's OK to be thanked publicly ---------- */
+async function loadThanks() {
+  if (DEMO) return;
+  try {
+    const r = await fetch(CONFIG.SCRIPT_URL + "?action=families&t=" + Date.now());
+    const j = await r.json();
+    const list = (j && j.thanks) || [];
+    if (!list.length) return;
+    const card = (x, cls) => {
+      const c = el("div", "ty" + (cls && cls !== "drop" ? " " + cls : ""));
+      c.append(el("b", null, x.name));
+      if (cls === "drop") { c.append(el("div", "gave", "📍 " + x.address)); return c; }
+      if (x.gave) c.append(el("div", "gave", "🎁 " + x.gave));
+      if (x.note) c.append(el("div", "note", "“" + x.note + "”"));
+      if (/^https?:\/\//i.test(x.website || "")) { const a = el("a", null, "Visit them →"); a.href = x.website; a.target = "_blank"; a.rel = "noopener"; const d = el("div"); d.style.marginTop = "6px"; d.append(a); c.append(d); }
+      return c;
+    };
+    const section = (id, title, items, cls) => {
+      const box = $("#" + id); if (!items.length) return;
+      const g = el("div", "ty-grid"); items.forEach(x => g.append(card(x, cls)));
+      box.append(el("h3", null, title), g);
+    };
+    section("thanks-drop", "📍 Drop off gifts here", list.filter(x => x.dropoff && x.address), "drop");
+    section("thanks-sponsors", "🌟 Our sponsors", list.filter(x => /corporate/i.test(x.kind)), "sponsor");
+    section("thanks-local", "🏪 Local businesses & friends", list.filter(x => !/corporate/i.test(x.kind)));
+    $("#thanks").hidden = false;
+    if (startHash === "thanks") setTimeout(() => $("#thanks").scrollIntoView({ block: "start" }), 50);
+  } catch (e) { /* the wall is a nice extra; the page works without it */ }
+}
+loadThanks();
 
 /* ---------- open the right section from the link (runs last, once everything is set up) ---------- */
 if (startHash === "mylist") { showPanel("adopt", false); $("#f-mylist").hidden = false; setTimeout(() => $("#mylist").scrollIntoView({ block: "start" }), 50); }

@@ -532,7 +532,7 @@ function go(tab, extra) { Object.assign(ui, extra || {}); ui.tab = tab; render()
 
 /* ---------- render shell ---------- */
 const TABS = [
-  ["home", "🏠 Home"], ["chat", "💬 Chat"], ["cheers", "🎉 Cheers"], ["tasks", "✅ Tasks"], ["families", "🎁 Families"], ["routes", "🛷 Routes"], ["crew", "🧝 Crew"], ["stories", "📣 Stories"], ["print", "🖨️ Printables"]
+  ["home", "🏠 Home"], ["chat", "💬 Chat"], ["cheers", "🎉 Cheers"], ["tasks", "✅ Tasks"], ["families", "🎁 Families"], ["routes", "🛷 Routes"], ["crew", "🧝 Crew"], ["stories", "📣 Stories"], ["thanks", "💚 Thank-yous"], ["print", "🖨️ Printables"]
 ];
 function render(force) {
   if (!S || !me) return;
@@ -554,7 +554,7 @@ function render(force) {
     class: "tab", role: "tab", "aria-selected": String(ui.tab === id), onclick: () => go(id)
   }, label, counts[id] ? h("span", { class: "count", text: counts[id] }) : null)));
   const y = window.scrollY;
-  const view = { home: viewHome, chat: viewChat, cheers: viewCheers, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories, print: viewPrint }[ui.tab]();
+  const view = { home: viewHome, chat: viewChat, cheers: viewCheers, tasks: viewTasks, families: viewFamilies, routes: viewRoutes, crew: viewCrew, stories: viewStories, thanks: viewThanks, print: viewPrint }[ui.tab]();
   $("#view").replaceChildren(view);
   restoreDrafts(view);
   window.scrollTo({ top: y });
@@ -615,6 +615,7 @@ function feedTarget(l) {
   }
   if (/^(welcomed|updated|re-sent|sent a new ELF code)|New volunteer/.test(l.what)) return { label: "Crew", go: () => go("crew") };
   if (/Cheers wall|shout-out/.test(l.what)) return { label: "Cheers", go: () => go("cheers") };
+  if (/thank-you board|^thanked /.test(l.what)) return { label: "Thank-yous", go: () => go("thanks") };
   return null;
 }
 function goTask(t) {
@@ -682,6 +683,9 @@ function needsAttention() {
   const noRoute = adopted.filter(f => !f.team);
   if (new Date().getMonth() === 11 || noRoute.length >= 10)
     add(noRoute.length, "🛷", plural(noRoute.length, "adopted family isn't", "adopted families aren't") + " on a route yet", idList(noRoute), "Routes", () => go("routes"));
+  const owed = (S.sponsors || []).filter(needsThanks);
+  add(owed.length, "💚", plural(owed.length, "business or sponsor needs", "businesses and sponsors need") + " a thank-you",
+    owed.slice(0, 4).map(x => x.name).join(", "), "Thank-yous", () => go("thanks", { spFilter: "thank" }));
   const stale = S.tasks.filter(t => t.status === "Open" && olderThan(t.created, 3));
   add(stale.length, "📌", plural(stale.length, "task has", "tasks have") + " sat unclaimed for 3+ days", stale.slice(0, 3).map(t => t.title).join(" · "), "Tasks", () => go("tasks", { taskFilter: "open" }));
   if (me.isLead) {
@@ -1819,6 +1823,106 @@ function openPrintables() {
   try { sessionStorage.setItem("ks-elf-contact", JSON.stringify({ name: firstName(me.name), phone: mine.phone || "" })); } catch (e) {}
   location.href = new URL("resources.html", location.href).href;
 }
+/* ================= THANK-YOU BOARD ================= */
+// Every business, church and sponsor that pitched in. The ones that OK'd it show on the
+// public sign-up page's "Thank you, neighbors!" wall (no contacts, notes or amounts ever).
+const SP_STATUS_BADGE = { "Asked": "b-hidden", "Said yes": "b-available", "Received": "b-pending", "Thanked": "b-adopted" };
+const needsThanks = x => x.status === "Received" || (x.status === "Said yes" && !x.thanked && olderThan(x.added, 7));
+function thankYouPost(x) {
+  const corp = /corporate/i.test(x.kind);
+  return [
+    "💚 A big Kilted Santa THANK YOU to " + x.name + "! 🎅",
+    "",
+    x.gave ? x.name + " stepped up for families in Jackson County this Christmas: " + x.gave.charAt(0).toLowerCase() + x.gave.slice(1).replace(/\.?$/, ".") : x.name + " stepped up for families in Jackson County this Christmas.",
+    x.note ? x.note : "",
+    x.dropoff && x.address ? "📍 They're a gift drop-off spot too: " + x.address : "",
+    "",
+    corp ? "We're so grateful for sponsors who invest in our neighbors." : "Support the local businesses that support our neighbors. Stop in and tell them the Kilted Santas sent you! 🎄",
+    x.website || "",
+    "",
+    "#KiltedSanta #JacksonMI" + (corp ? "" : " #ShopLocal")
+  ].filter((l, i, a) => l !== "" || (a[i - 1] !== "" && i > 0)).join("\n").trim();
+}
+function sponsorForm(x) {
+  const key = "sponsor:" + (x ? x.id : "new");
+  const form = h("form", { class: "card stack", "data-draft": key, style: "border:2px solid var(--gold)", onsubmit: async e => {
+      e.preventDefault(); const fd = new FormData(form);
+      const r = await act($("button[type=submit]", form), "sponsor_save", {
+        id: x ? x.id : "", name: fd.get("name"), kind: fd.get("kind"), gave: fd.get("gave"), value: fd.get("value") || "",
+        dropoff: !!fd.get("dropoff"), address: fd.get("address"), site: fd.get("site"), contact: fd.get("contact"),
+        phone: fd.get("phone"), email: fd.get("email"), isPublic: !!fd.get("isPublic"), note: fd.get("note"),
+        status: fd.get("status"), privateNotes: fd.get("privateNotes") });
+      if (r) { ui.sponsorEdit = null; render(true); }
+    } },
+    h("h3", null, x ? "Edit " + x.name : "Add a business or sponsor"),
+    h("div", { class: "grid2" },
+      h("label", { class: "f" }, "Name", h("input", { type: "text", name: "name", required: true, maxlength: 100, value: x ? x.name : "" })),
+      h("label", { class: "f" }, "Kind", h("select", { name: "kind" }, (S.sponsorKinds || []).map(k => opt(k, k, x && x.kind === k)))),
+      h("label", { class: "f" }, "What they gave or did", h("input", { type: "text", name: "gave", maxlength: 300, placeholder: "e.g. Gift drop-off spot, 50 rolls of wrapping paper", value: x ? x.gave : "" })),
+      h("label", { class: "f" }, "Status", h("select", { name: "status" }, (S.sponsorStatuses || []).map(k => opt(k, k, x ? x.status === k : k === "Said yes")))),
+      me.isAdopt ? h("label", { class: "f" }, "Value (optional, private)", h("input", { type: "text", name: "value", maxlength: 60, placeholder: "e.g. $500", value: x ? x.value || "" : "" })) : null,
+      h("label", { class: "f" }, "Website or Facebook page", h("input", { type: "text", name: "site", maxlength: 300, placeholder: "e.g. facebook.com/grandpasbakery", value: x ? x.website : "" })),
+      h("label", { class: "f" }, "Contact person", h("input", { type: "text", name: "contact", maxlength: 80, value: x ? x.contact : "" })),
+      h("label", { class: "f" }, "Phone", h("input", { type: "tel", name: "phone", maxlength: 30, value: x ? x.phone : "" })),
+      h("label", { class: "f" }, "Email", h("input", { type: "email", name: "email", maxlength: 120, value: x ? x.email : "" })),
+      h("label", { class: "f" }, "Address", h("input", { type: "text", name: "address", maxlength: 160, placeholder: "Shown publicly only if they're a drop-off spot", value: x ? x.address : "" }))),
+    h("label", { class: "check" }, h("input", { type: "checkbox", name: "dropoff", checked: x ? x.dropoff : false }), h("span", null, "📍 They're a ", h("b", null, "gift drop-off spot"), " (their address shows on the public page so adopters know where to bring gifts)")),
+    h("label", { class: "check" }, h("input", { type: "checkbox", name: "isPublic", checked: x ? x.isPublic : false }), h("span", null, "🌐 ", h("b", null, "They said it's OK"), " to thank them by name on our public page and Facebook")),
+    h("label", { class: "f" }, "Public thank-you note (optional)", h("textarea", { name: "note", rows: 2, maxlength: 400, placeholder: "e.g. Thank you for the cookies at wrapping night!" }, x ? x.note : "")),
+    h("label", { class: "f" }, "Private notes for the crew", h("textarea", { name: "privateNotes", rows: 2, maxlength: 600, placeholder: "e.g. Ask for Ann. Pickups Tuesdays after 3." }, x ? x.privateNotes : "")),
+    h("div", { class: "row" }, h("button", { class: "btn", type: "submit" }, x ? "Save" : "Add to the board"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => { ui.sponsorEdit = null; delete ui.drafts[key]; render(true); } }, "Cancel")));
+  return form;
+}
+function sponsorCard(x) {
+  if (ui.sponsorEdit === x.id) return sponsorForm(x);
+  const canEdit = me.isAdopt || x.addedBy === me.name;
+  return h("div", { class: "card", id: "sp-" + x.id },
+    h("div", { class: "row" }, h("h3", { style: "font-size:19px;margin:0", text: x.name }),
+      h("span", { class: "badge " + (/corporate/i.test(x.kind) ? "b-delivered" : "b-role"), text: x.kind }),
+      h("span", { class: "badge " + (SP_STATUS_BADGE[x.status] || "b-hidden"), text: x.status === "Thanked" ? "💚 Thanked" : x.status }),
+      needsThanks(x) ? h("span", { class: "badge b-red", text: "Needs a thank-you" }) : null),
+    x.gave ? h("p", { style: "margin:8px 0 0", text: "🎁 " + x.gave }) : null,
+    x.dropoff ? h("div", { class: "small", style: "margin-top:4px" }, "📍 Gift drop-off spot", x.address ? ": " + x.address : h("span", { style: "color:var(--red)" }, " · add their address so adopters can find it")) : x.address ? h("div", { class: "small muted", style: "margin-top:4px", text: x.address }) : null,
+    x.value ? h("div", { class: "small", style: "margin-top:4px" }, h("b", null, "Value: "), x.value) : null,
+    x.note ? h("div", { class: "small", style: "margin-top:4px;font-style:italic", text: "“" + x.note + "”" }) : null,
+    x.privateNotes ? h("div", { class: "small muted", style: "margin-top:4px;white-space:pre-wrap", text: "🔒 " + x.privateNotes }) : null,
+    h("div", { class: "small muted", style: "margin-top:6px" },
+      x.isPublic ? "🌐 On the public thank-you wall" : "🔒 Not listed publicly (they haven't OK'd it)",
+      " · added by " + firstName(x.addedBy) + " " + ago(x.added),
+      x.thanked ? " · thanked " + ago(x.thanked) : ""),
+    h("div", { class: "row", style: "margin-top:8px" },
+      x.contact ? h("span", { class: "small", text: "👤 " + x.contact }) : null,
+      telLinks(x.phone, x.email),
+      x.website ? h("a", { class: "btn ghost sm", href: x.website, target: "_blank", rel: "noopener" }, "🔗 Website") : null),
+    h("div", { class: "row", style: "margin-top:8px" },
+      x.status !== "Thanked" ? h("button", { class: "btn sm", onclick: e => act(e.currentTarget, "sponsor_thanked", { id: x.id }) }, "💚 Mark thanked") : null,
+      x.isPublic ? h("button", { class: "btn ghost sm", onclick: () => copyText(thankYouPost(x)) }, "📣 Copy a Facebook thank-you") : null,
+      canEdit ? h("button", { class: "btn ghost sm", onclick: () => { ui.sponsorEdit = x.id; render(true); } }, "Edit") : null,
+      me.isLead ? h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Remove?")) act(e.currentTarget, "sponsor_delete", { id: x.id }); } }, "Remove") : null));
+}
+function viewThanks() {
+  const all = (S.sponsors || []).slice().reverse();
+  const filters = [["all", "All"], ["thank", "💚 Needs a thank-you"], ["corp", "🏢 Corporate sponsors"], ["local", "🏪 Small businesses"], ["drop", "📍 Drop-off spots"], ["asked", "⏳ Asked, waiting"]];
+  const test = { all: () => true, thank: needsThanks, corp: x => /corporate/i.test(x.kind), local: x => /small business/i.test(x.kind),
+    drop: x => x.dropoff, asked: x => x.status === "Asked" };
+  const f = ui.spFilter || "all";
+  const list = all.filter(test[f] || test.all);
+  const pub = all.filter(x => x.isPublic && x.status !== "Asked").length;
+  return h("div", { class: "stack" },
+    h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "💚 Thank-you board"),
+      h("span", { class: "small muted", text: "Every business, church and sponsor helping this Christmas" })),
+    h("div", { class: "card small", style: "background:linear-gradient(135deg,#fff,#eef7f0)" },
+      h("b", null, all.length + " helping"), " · ", all.filter(test.corp).length + " corporate sponsor" + (all.filter(test.corp).length === 1 ? "" : "s"),
+      " · ", all.filter(test.drop).length + " drop-off spot" + (all.filter(test.drop).length === 1 ? "" : "s"),
+      " · ", h("b", { style: all.filter(needsThanks).length ? "color:var(--red)" : "" }, all.filter(needsThanks).length + " need a thank-you"),
+      h("div", { style: "margin-top:6px" }, pub + " showing on the ", h("a", { href: (S.publicUrl || "./") + "#thanks", target: "_blank", rel: "noopener" }, "public thank-you wall"),
+        ". Only the ones who said it's OK, and never contacts, notes or amounts.")),
+    ui.sponsorEdit === "new" ? sponsorForm(null) : h("div", null, h("button", { class: "btn", onclick: () => { ui.sponsorEdit = "new"; render(true); } }, "＋ Add a business or sponsor")),
+    h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(f === v), onclick: () => { ui.spFilter = v; render(true); } }, l + " (" + all.filter(test[v]).length + ")"))),
+    list.length ? h("div", { class: "stack" }, list.map(sponsorCard))
+      : h("div", { class: "card empty", text: all.length ? "Nothing here right now." : "No one on the board yet. When a business or sponsor helps, add them here so we never forget to say thank you. 💚" }));
+}
 function viewPrint() {
   const helps = [
     ["dropoff", "Be a gift drop-off spot"], ["gifts", "Donate new, unwrapped gifts"], ["wrap", "Donate wrapping supplies"],
@@ -1844,10 +1948,16 @@ function viewPrint() {
       const r = await act($("button[type=submit]", form), "task_create", {
         title, area: drop ? "Pickups & drop-offs" : "Spread the word", details, due: String(fd.get("due") || "")
       });
-      if (r) { form.reset(); toast(biz + " is logged. Thank you! 🎉"); }
+      if (r) {
+        const done = { dropoff: "Gift drop-off spot", gifts: "Donated new gifts", wrap: "Donated wrapping supplies", cards: "Donated gift cards", adopt: "Adopted a family as a team", share: "Shared our posts & hung a flyer" };
+        const gave = helps.filter(([k]) => fd.get(k)).map(([k]) => done[k]).join(", ");
+        await api("sponsor_save", { name: biz, kind: "Local small business", gave, dropoff: drop,
+          contact: String(fd.get("contact") || ""), isPublic: !!fd.get("thanks"), status: "Said yes", privateNotes: String(fd.get("notes") || "") }, true).catch(() => {});
+        form.reset(); toast(biz + " is logged, and they're on the 💚 Thank-you board. 🎉");
+      }
     } },
     h("h3", null, "A business said yes? Log it here"),
-    h("p", { class: "small muted", style: "margin:0" }, "This posts a task on the board, so someone sets up the box, picks up gifts, or sends a thank-you."),
+    h("p", { class: "small muted", style: "margin:0" }, "This posts a task on the board (so someone sets up the box or picks up gifts) and adds them to the 💚 Thank-you board."),
     h("div", { class: "grid2" },
       h("label", { class: "f" }, "Business name", h("input", { type: "text", name: "biz", maxlength: 60, required: true })),
       h("label", { class: "f" }, "Contact (name & phone)", h("input", { type: "text", name: "contact", maxlength: 120 })),
