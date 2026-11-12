@@ -616,6 +616,7 @@ function feedTarget(l) {
   if (/^(welcomed|updated|re-sent|sent a new ELF code)|New volunteer/.test(l.what)) return { label: "Crew", go: () => go("crew") };
   if (/Cheers wall|shout-out/.test(l.what)) return { label: "Cheers", go: () => go("cheers") };
   if (/thank-you board|^thanked /.test(l.what)) return { label: "Thank-yous", go: () => go("thanks") };
+  if (/Christmas help list/.test(l.what)) return { label: "Help list", go: () => go("families", { resOpen: true }) };
   return null;
 }
 function goTask(t) {
@@ -846,6 +847,60 @@ function taskDoneForm(t) {
       h("button", { class: "btn sm ghost", type: "button", onclick: () => { ui.taskDone = null; render(true); } }, "Cancel")));
   return form;
 }
+/* ---------- Christmas help list (the public help.html page) ---------- */
+// Other programs around the county. Adoption ELVES keep dates current; every family gets the link.
+function resourceForm(x) {
+  const key = "res:" + (x ? x.id : "new");
+  const form = h("form", { class: "stack", "data-draft": key, style: "border-top:1px solid var(--line);padding-top:10px", onsubmit: async e => {
+      e.preventDefault(); const fd = new FormData(form);
+      const r = await act($("button[type=submit]", form), "resource_save", { id: x ? x.id : "",
+        name: fd.get("name"), category: fd.get("category"), offer: fd.get("offer"), who: fd.get("who"), how: fd.get("how"),
+        link: fd.get("link"), phone: fd.get("phone"), address: fd.get("address"), dates: fd.get("dates"), notes: fd.get("notes"), show: !!fd.get("show") });
+      if (r) { ui.resEdit = null; render(true); }
+    } },
+    h("div", { class: "grid2" },
+      h("label", { class: "f" }, "Program name", h("input", { type: "text", name: "name", required: true, maxlength: 120, value: x ? x.name : "" })),
+      h("label", { class: "f" }, "Kind of help", h("select", { name: "category" }, (S.resourceCategories || []).map(c => opt(c, c, x && x.category === c)))),
+      h("label", { class: "f" }, "Dates / deadline", h("input", { type: "text", name: "dates", maxlength: 300, placeholder: "e.g. Sign up Nov 18–20, 9am–3pm", value: x ? x.dates : "" })),
+      h("label", { class: "f" }, "Link to apply or learn more", h("input", { type: "text", name: "link", maxlength: 400, value: x ? x.link : "" })),
+      h("label", { class: "f" }, "Phone", h("input", { type: "text", name: "phone", maxlength: 40, value: x ? x.phone : "" })),
+      h("label", { class: "f" }, "Address", h("input", { type: "text", name: "address", maxlength: 200, value: x ? x.address : "" }))),
+    h("label", { class: "f" }, "What they offer", h("textarea", { name: "offer", rows: 2, maxlength: 500 }, x ? x.offer : "")),
+    h("label", { class: "f" }, "Who it's for", h("input", { type: "text", name: "who", maxlength: 300, value: x ? x.who : "" })),
+    h("label", { class: "f" }, "How to apply", h("input", { type: "text", name: "how", maxlength: 400, value: x ? x.how : "" })),
+    h("label", { class: "f" }, "Notes for ELVES (not shown publicly)", h("input", { type: "text", name: "notes", maxlength: 500, value: x ? x.notes : "" })),
+    h("label", { class: "check" }, h("input", { type: "checkbox", name: "show", checked: x ? x.show : true }), h("span", null, "Show it on the public help page")),
+    h("div", { class: "row" }, h("button", { class: "btn sm", type: "submit" }, x ? "Save" : "Add program"),
+      h("button", { class: "btn ghost sm", type: "button", onclick: () => { ui.resEdit = null; delete ui.drafts[key]; render(true); } }, "Cancel")));
+  return form;
+}
+function helpListCard() {
+  const list = S.resources || [];
+  const stale = list.filter(x => x.show && (!x.checked || olderThan(x.checked, 21))).length;
+  const open = !!ui.resOpen;
+  return h("div", { class: "card stack", style: "background:linear-gradient(135deg,#fff,#eef7f0)" },
+    h("div", { class: "row" },
+      h("h3", { style: "font-size:18px;margin:0" }, "📋 Christmas help list for families"),
+      h("a", { class: "btn ghost sm", href: S.helpUrl || "help.html", target: "_blank", rel: "noopener", style: "margin-left:auto" }, "See the page ↗")),
+    h("p", { class: "small", style: "margin:0" }, list.filter(x => x.show).length + " programs around the county (toys, meals, coats, heat & bills), each with a link to apply. Every family gets this link in their sign-up email." + (stale ? " " + stale + " still need an ELF to call and confirm this year's dates." : "")),
+    h("div", { class: "row" },
+      me.isLead && S.helpListUnsent ? h("button", { class: "btn sm", onclick: e => { const b = e.currentTarget; if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "Tap again to email " + S.helpListUnsent + " families"; return; } act(b, "helplist_send", {}); } },
+        "✉️ Email it to " + S.helpListUnsent + " famil" + (S.helpListUnsent === 1 ? "y" : "ies") + " who haven't gotten it") : null,
+      h("button", { class: "btn ghost sm", onclick: () => { ui.resOpen = !open; render(true); } }, open ? "Hide the list" : "✏️ Update the list"),
+      h("button", { class: "btn ghost sm", onclick: () => copyText("Other Christmas help in Jackson County (toys, meals, coats, heat & bills), with links to apply: " + (S.helpUrl || "")) }, "🔗 Copy link")),
+    open ? h("div", { class: "stack" },
+      h("p", { class: "small muted", style: "margin:0" }, "Dates change every year. When you call a program or see their new dates, update it here and tap \"Checked today.\""),
+      ui.resEdit === "new" ? resourceForm(null) : h("div", null, h("button", { class: "btn sm", onclick: () => { ui.resEdit = "new"; render(true); } }, "＋ Add a program")),
+      list.map(x => ui.resEdit === x.id ? resourceForm(x) : h("div", { class: "help-item", style: "align-items:flex-start" },
+        h("div", { class: "grow" },
+          h("b", { text: x.name }), x.show ? null : h("span", { class: "badge b-hidden", style: "margin-left:6px", text: "Hidden" }),
+          h("div", { class: "small muted", text: x.category + (x.dates ? " · " + x.dates : "") }),
+          h("div", { class: "tiny muted", text: (x.checked ? "Checked " + ago(x.checked) + (x.checkedBy ? " by " + firstName(x.checkedBy) : "") : "⚠️ Not confirmed yet") + (x.notes ? " · " + x.notes : "") })),
+        h("div", { class: "row", style: "flex:none" },
+          h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "resource_checked", { id: x.id }) }, "✅ Checked today"),
+          h("button", { class: "btn ghost sm", onclick: () => { ui.resEdit = x.id; render(true); } }, "Edit"),
+          me.isLead ? h("button", { class: "btn ghost sm", onclick: e => { if (confirmInline(e.currentTarget, "Remove?")) act(e.currentTarget, "resource_delete", { id: x.id }); } }, "Remove") : null)))) : null);
+}
 // Leads: one message to every current adopter. Each person gets one email naming all their families.
 async function broadcastDialog() {
   let recips = [];
@@ -920,6 +975,7 @@ function viewFamilies() {
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Families"),
       h("span", { class: "small muted", text: me.isAdopt ? "You can see private details. Please keep them in the hub." : "Parent names and addresses stay with the adoption team." })),
     me.isLead && F.some(f => f.status === "Adopted") ? h("div", null, h("button", { class: "btn ghost sm", onclick: broadcastDialog }, "📣 Email all adopters")) : null,
+    me.isAdopt ? helpListCard() : null,
     h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.famFilter === v),
       onclick: () => { ui.famFilter = v; render(); } }, l + " (" + F.filter(f => inFilter(f, v)).length + ")"))),
     search,

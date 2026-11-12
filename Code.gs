@@ -101,7 +101,7 @@ const FAMILY_HEADERS = [
   'Adopted by', 'Adopter phone', 'Adopter email', 'Connection type',
   'Handled by', 'Gift progress', 'Santa team', 'Stop #', 'Team notes',
   'Request type', 'Requested by', 'Swing-by notes', 'Flag',
-  'Family told', 'Family contacted', 'Lat', 'Lng', 'Mapped address', 'Adopter messages',
+  'Family told', 'Family contacted', 'Lat', 'Lng', 'Mapped address', 'Adopter messages', 'Help list sent',
   'Kids data — do not edit'
 ];
 
@@ -124,6 +124,26 @@ const TASK_HEADERS = [
 
 const LOG_HEADERS = ['When', 'Who', 'What'];
 const CHAT_HEADERS = ['When', 'From', 'From ID', 'Channel', 'Message'];
+const HELP_URL = PUBLIC_URL + 'help.html';
+const RESOURCE_HEADERS = ['ID', 'Order', 'Name', 'Category', 'What they offer', 'Who can get it', 'How to apply',
+  'Apply link', 'Phone', 'Address', 'Dates / deadline', 'Show on page', 'Last checked', 'Checked by', 'Notes for ELVES'];
+const RESOURCE_CATEGORIES = ['Not sure where to start', 'Toys & gifts', 'Holiday meals & food', 'Heat, lights & bills',
+  'Coats, clothing & household', 'Housing & emergencies'];
+// Starter list (Nov 2026). ELVES keep it current from the hub; dates change every year.
+const RESOURCE_SEED = [
+  ['Central Michigan 2-1-1', 'Not sure where to start', 'One free call connects you to food, heat, rent, toy and holiday programs near you, 24/7.', 'Anyone', 'Dial 2-1-1, call (866) 561-2500, or search online.', 'https://centralmichigan211.org', '(866) 561-2500', '', 'Open all year, 24/7'],
+  ['The Salvation Army of Jackson County', 'Toys & gifts', 'Christmas help for families: toys for kids (Angel Tree), Christmas food baskets, and warm winter clothing.', 'Families in need in Jackson County. Bring ID and proof of address when you register.', 'Call or stop in to ask about this year\'s Christmas sign-up dates. Help is often first come, first served.', 'https://www.salvationarmyusa.org/mi/jackson/e-pearl-st-corps/', '(517) 782-7185', '806 E. Pearl St, Jackson, MI 49201', 'Sign-ups usually open in the fall. Call for this year\'s dates.'],
+  ['Toys for Tots (Jackson, MI)', 'Toys & gifts', 'New toys for kids at Christmas. Last year they helped more than 14,000 Jackson-area children.', 'Families with children who need help with Christmas toys', 'Check their website for this year\'s toy request details.', 'https://jackson-mi.toysfortots.org/', '', '', 'Check their site for this year\'s dates.'],
+  ['Priceless Gift Toy Store', 'Toys & gifts', 'A free Christmas "store" where parents pick out toys for their kids, plus personal care gift bags.', 'Jackson families in need', 'Call to ask about this year\'s dates, location and appointments.', '', '(517) 740-8444', '', 'Open in December. Call for this year\'s dates.'],
+  ['Christ\'s Kingdom Ministries', 'Holiday meals & food', 'A Christmas food basket.', 'Families in need. First come, first served.', 'Call to ask when baskets are given out.', '', '(517) 879-5680', '501 S. Elm St, Jackson, MI 49203', 'Call for this year\'s dates.'],
+  ['Compassionate Ministries of Jackson County', 'Holiday meals & food', 'Free food pantries at churches all around the county, plus fresh-food giveaways.', 'Anyone who needs food', 'Visit a pantry on its day, or call for the schedule near you.', 'https://www.cmjackson.org/', '(517) 395-2652', '3737 Clinton Rd, Jackson, MI 49201', 'Pantries run most Saturdays. See their site for days and times.'],
+  ['Jackson Michigan Giving Back to the Community', 'Coats, clothing & household', 'Basic needs (toilet paper, soap, shampoo), baby needs (formula, diapers, wipes), gently used clothing for all ages, and free food.', 'Anyone in need', 'Stop by on their giveaway days. For emergencies, call for an appointment.', 'https://jacksonmichigangivingback.org/services-and-more', '(517) 395-4799', '', 'Basic needs Mondays, clothing Wednesdays, baby needs 3rd Tuesday, food 3rd Sunday (10am–4pm). Check their site.'],
+  ['Love INC of Jackson County', 'Coats, clothing & household', 'Help with furniture and household items, prescriptions, vital documents, transportation and more, through local churches.', 'Jackson County residents in need', 'Call their clearinghouse line to ask for help.', 'https://loveofjackson.org/networkservices/', '(517) 782-9766 ext. 1', '', 'Open all year'],
+  ['MDHHS State Emergency Relief', 'Heat, lights & bills', 'Help with heat and electric bills, shut-off notices, and emergency housing costs.', 'Michigan households with low income facing an emergency', 'Apply online at MI Bridges (michigan.gov/mibridges), or call the Jackson MDHHS office.', 'https://www.michigan.gov/mdhhs/assistanceprograms/emergency-relief', '(517) 780-7400', '', 'Open all year. Apply as soon as you get a shut-off notice.'],
+  ['Community Action Agency', 'Housing & emergencies', 'Help with housing, rent and utilities, plus other family programs.', 'Jackson County households with low income', 'Call or visit their website to apply.', 'https://www.caajlh.org/help-with-housing/', '(517) 784-4800', '', 'Open all year'],
+  ['United Way of South Central Michigan', 'Not sure where to start', 'Connects families with local programs for bills, food and more.', 'Anyone', 'Call their Jackson office or 2-1-1.', 'https://unitedforscmi.org', '(517) 784-0511', '', 'Open all year'],
+  ['Legal Services of South Central Michigan', 'Housing & emergencies', 'Free legal help for evictions, housing problems and benefits.', 'Households with low income', 'Call their Jackson office.', 'https://lsscm.org', '(517) 787-6111', '', 'Open all year']
+];
 const SPONSOR_HEADERS = ['ID', 'Added', 'Added by', 'Name', 'Kind', 'What they gave', 'Value', 'Drop-off spot',
   'Address', 'Website', 'Contact person', 'Phone', 'Email', 'OK to list publicly', 'Thank-you note', 'Status', 'Thanked', 'Private notes'];
 const SPONSOR_KINDS = ['Local small business', 'Corporate sponsor', 'Church / nonprofit', 'Community group', 'Individual'];
@@ -143,6 +163,7 @@ function setup() {
   table_('Removed', REMOVED_HEADERS);
   table_('Cheers', CHEER_HEADERS);
   table_('Sponsors', SPONSOR_HEADERS);
+  resourcesTable_();
   ensureElfIds_();
   clearAutoHandled_();
 
@@ -191,6 +212,7 @@ function setup() {
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'families') return json_({ ok: true, families: listAvailable_(), thanks: publicSponsors_() });
+  if (action === 'resources') return json_({ ok: true, resources: publicResources_(), categories: RESOURCE_CATEGORIES });
   return json_({ ok: true, message: 'Kilted Santa sign-up service is running.' });
 }
 
@@ -334,8 +356,13 @@ function addFamily_(d) {
     '3. If a sponsor adopts your family, we\'ll email you right away, and an ELF will be in touch about delivery.\n\n' +
     'We have a lot of families signing up this year, and we can\'t promise every family will be adopted, ' +
     'but our whole crew is working to reach as many as we can.\n\n' +
+    'Other Christmas help in ' + SERVICE_AREA_NAME + ': toys, holiday meals, coats, and help with heat and bills. ' +
+    'Here\'s a list of local programs with links to apply:\n' + HELP_URL + '\n\n' +
     'If your phone number or address changes, just reply to this email and let us know.\n\n' +
     'Merry Christmas,\n— The Kilted Santa Project');
+  const fam2 = table_('Families', FAMILY_HEADERS);
+  const mine = rows_(fam2).filter(function (r) { return String(r['Family #']) === famNo; })[0];
+  if (mine && d.email) set_(fam2, mine._row, { 'Help list sent': new Date() });
 
   return { ok: true, familyNumber: famNo, inArea: inArea === 'Yes' };
 }
@@ -756,6 +783,8 @@ function state_(ctx) {
   return {
     families: families, crew: crew, tasks: tasks, log: log, chat: chatFor_(ctx, ''), cheers: cheersFor_(ctx),
     sponsors: sponsorsFor_(ctx), sponsorKinds: SPONSOR_KINDS, sponsorStatuses: SPONSOR_STATUSES,
+    resources: ctx.isAdopt ? resourcesAll_() : [], resourceCategories: RESOURCE_CATEGORIES, helpUrl: HELP_URL,
+    helpListUnsent: ctx.isAdopt ? helpListTargets_().length : 0,
     randomRoute: RANDOM_ROUTE, statuses: STATUSES, giftSteps: GIFT_STEPS, roles: HUB_ROLES,
     areas: TASK_AREAS, publicUrl: PUBLIC_URL, serviceArea: SERVICE_AREA_NAME
   };
@@ -913,6 +942,47 @@ function mapLocate_(ctx) {
 function checkMap() {
   const res = Maps.newGeocoder().setRegion('us').geocode('Jackson, MI');
   Logger.log(res.status + ' ' + JSON.stringify(res.results[0].geometry.location));
+}
+
+// ---------- Christmas help list ----------
+function resourcesTable_() {
+  const t = table_('Resources', RESOURCE_HEADERS);
+  const props = PropertiesService.getScriptProperties();
+  if (!props.getProperty('resourcesSeeded') && !rows_(t).some(function (r) { return r['ID']; })) {
+    props.setProperty('resourcesSeeded', '1');
+    RESOURCE_SEED.forEach(function (x, i) {
+      append_(t, { 'ID': 'R' + (i + 1), 'Order': i + 1, 'Name': x[0], 'Category': x[1], 'What they offer': x[2], 'Who can get it': x[3],
+        'How to apply': x[4], 'Apply link': x[5], 'Phone': text_(x[6]), 'Address': x[7], 'Dates / deadline': x[8],
+        'Show on page': 'Yes', 'Last checked': '', 'Checked by': '', 'Notes for ELVES': 'From the starter list. Not confirmed yet: please call and update.' });
+    });
+    props.setProperty('nextResource', String(RESOURCE_SEED.length + 1));
+  }
+  return t;
+}
+function resourceOut_(r) {
+  return { id: String(r['ID']), order: Number(r['Order']) || 999, name: String(r['Name'] || ''), category: String(r['Category'] || ''),
+    offer: String(r['What they offer'] || ''), who: String(r['Who can get it'] || ''), how: String(r['How to apply'] || ''),
+    link: /^https?:\/\//i.test(String(r['Apply link'] || '')) ? String(r['Apply link']) : '', phone: String(r['Phone'] || ''),
+    address: String(r['Address'] || ''), dates: String(r['Dates / deadline'] || ''), checked: iso_(r['Last checked']) };
+}
+function resourcesAll_() {
+  return rows_(resourcesTable_()).filter(function (r) { return r['ID']; }).map(function (r) {
+    const o = resourceOut_(r); o.show = r['Show on page'] === 'Yes'; o.checkedBy = String(r['Checked by'] || ''); o.notes = String(r['Notes for ELVES'] || '');
+    return o;
+  }).sort(function (a, b) { return a.order - b.order; });
+}
+function publicResources_() {
+  try {
+    return rows_(resourcesTable_()).filter(function (r) { return r['ID'] && r['Show on page'] === 'Yes'; })
+      .map(resourceOut_).sort(function (a, b) { return a.order - b.order; });
+  } catch (e) { console.error(e); return []; }
+}
+// Families who signed up with an email and haven't been sent the help list yet.
+function helpListTargets_() {
+  return rows_(table_('Families', FAMILY_HEADERS)).filter(function (r) {
+    return r['Family #'] && String(r['Email'] || '').indexOf('@') > 0 && !r['Help list sent'] &&
+      ['Not listed', 'Delivered'].indexOf(String(r['Status'])) < 0;
+  });
 }
 
 // The thank-you board as the crew sees it. Dollar values are for Adoption ELVES and Leads only.
@@ -1315,6 +1385,69 @@ const HUB_ACTIONS = {
     c.t.sh.deleteRow(c.r._row);
     log_(ctx, pending ? 'declined ' + c.r['Name'] + '\'s volunteer application' : 'removed ' + c.r['Name'] + ' from the crew');
     return { msg: pending ? 'Application declined.' : c.r['Name'] + ' was removed from the crew.' };
+  },
+  // ---------- Christmas help list (public help.html), kept current by Adoption ELVES ----------
+  resource_save: function (ctx, d) {
+    if (!ctx.isAdopt) return err_('Only Adoption ELVES and Leads can edit the help list.');
+    const name = clean_(d.name, 120); if (!name) return err_('Add the program name.');
+    let link = String(d.link || '').trim();
+    if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+    const t = resourcesTable_();
+    const fields = {
+      'Name': name, 'Category': RESOURCE_CATEGORIES.indexOf(d.category) >= 0 ? d.category : RESOURCE_CATEGORIES[0],
+      'What they offer': clean_(d.offer, 500), 'Who can get it': clean_(d.who, 300), 'How to apply': clean_(d.how, 400),
+      'Apply link': clean_(link, 400), 'Phone': text_(clean_(d.phone, 40)), 'Address': clean_(d.address, 200),
+      'Dates / deadline': clean_(d.dates, 300), 'Show on page': d.show === false ? '' : 'Yes',
+      'Notes for ELVES': clean_(d.notes, 500), 'Last checked': new Date(), 'Checked by': ctx.name
+    };
+    if (d.id) {
+      const r = rows_(t).filter(function (x) { return String(x['ID']) === String(d.id); })[0];
+      if (!r) return err_('That program is gone.');
+      set_(t, r._row, fields);
+      log_(ctx, 'updated ' + name + ' on the Christmas help list');
+      return { msg: 'Saved.' };
+    }
+    const props = PropertiesService.getScriptProperties();
+    const n = Number(props.getProperty('nextResource') || 1);
+    props.setProperty('nextResource', String(n + 1));
+    append_(t, Object.assign({ 'ID': 'R' + n, 'Order': n }, fields));
+    log_(ctx, 'added ' + name + ' to the Christmas help list');
+    return { msg: 'Added to the help list.' };
+  },
+  resource_checked: function (ctx, d) {
+    if (!ctx.isAdopt) return err_('Only Adoption ELVES and Leads can do that.');
+    const t = resourcesTable_();
+    const r = rows_(t).filter(function (x) { return String(x['ID']) === String(d.id); })[0];
+    if (!r) return err_('That program is gone.');
+    set_(t, r._row, { 'Last checked': new Date(), 'Checked by': ctx.name });
+    return { msg: 'Marked checked today. Thank you!' };
+  },
+  resource_delete: function (ctx, d) {
+    if (!ctx.isLead) return err_('Only Leads can remove programs. You can hide it from the page instead.');
+    const t = resourcesTable_();
+    const r = rows_(t).filter(function (x) { return String(x['ID']) === String(d.id); })[0];
+    if (!r) return { msg: 'Already gone.' };
+    t.sh.deleteRow(r._row);
+    return { msg: 'Removed.' };
+  },
+  // Email the help list to every family who hasn't gotten it yet (each family gets it once).
+  helplist_send: function (ctx) {
+    if (!ctx.isLead) return err_('Only Leads can email every family at once.');
+    const fam = table_('Families', FAMILY_HEADERS);
+    const targets = helpListTargets_();
+    let sent = 0;
+    targets.forEach(function (r) {
+      const ok = mail_(r['Email'], 'Other Christmas help in ' + SERVICE_AREA_NAME + ' 🎄',
+        'Hi ' + firstName_(r['Parent/Guardian name']) + '!\n\n' +
+        'Thank you for signing up with the Kilted Santa Project (' + r['Family #'] + '). We\'re working hard to match every family we can with a sponsor.\n\n' +
+        'We also want to make sure you know about the other Christmas help in ' + SERVICE_AREA_NAME + ': toy programs, holiday meals, coats, ' +
+        'and help with heat and bills. Many of them have sign-up deadlines, so it\'s worth looking now:\n\n' + HELP_URL + '\n\n' +
+        'Each program has a link or phone number so you can apply. If you\'re not sure where to start, call 2-1-1.\n\n' +
+        'Merry Christmas,\n— The Kilted Santa Project');
+      if (ok) { sent++; set_(fam, r._row, { 'Help list sent': new Date() }); }
+    });
+    log_(ctx, 'emailed the Christmas help list to ' + sent + ' famil' + (sent === 1 ? 'y' : 'ies') + ' ✉️');
+    return { msg: 'Sent to ' + sent + ' famil' + (sent === 1 ? 'y' : 'ies') + '.' };
   },
   // ---------- Thank-you board: businesses, sponsors and everyone who pitched in ----------
   // Any ELF can add one; whoever added it, Adoption ELVES and Leads can edit; Leads can remove.

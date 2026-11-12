@@ -295,6 +295,7 @@
   <section class="panel active" id="p-family" role="tabpanel" aria-labelledby="tab-family">
     <h2>Sign up for help this Christmas</h2>
     <p class="lead">No judgment, no hoops. Tell us a little about your household and what would make Christmas brighter. Your name, address and phone stay private — adopters only see a family number and the kids' ages, sizes and wishes.</p>
+    <p class="lead" style="margin-top:-4px"><a href="help.html">🎁 Other Christmas help in Jackson County</a>: toys, holiday meals, coats, and help with heat and bills, with links to apply.</p>
 
     <form id="f-family" class="card" novalidate>
       <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -600,7 +601,7 @@
 
 <footer class="wrap">
   <div id="cfg-footer"></div>
-  <p style="margin-top:10px"><a href="https://gofund.me/4cf21e0cc" target="_blank" rel="noopener">💝 Donate on GoFundMe</a> · <a href="hub.html">🧝 ELVES: Santa's Operations Hub →</a></p>
+  <p style="margin-top:10px"><a href="help.html">🎁 Other Christmas help</a> · <a href="https://gofund.me/4cf21e0cc" target="_blank" rel="noopener">💝 Donate on GoFundMe</a> · <a href="hub.html">🧝 ELVES: Santa's Operations Hub →</a></p>
 </footer>
 <div class="tartan" aria-hidden="true"></div>
 
@@ -908,8 +909,13 @@ $("#f-family").addEventListener("submit", e => {
     ];
     if (res.inArea === false || (res.inArea === undefined && !inArea))
       lines.push("Since your ZIP is outside " + CONFIG.SERVICE_AREA_NAME + ", we'll let you know whether our Santas can make it out to you.");
+    lines.push("We can't promise every family will be adopted, so please look at the other Christmas help in " + CONFIG.SERVICE_AREA_NAME + " too. Many programs have sign-up deadlines.");
     lines.push("Merry Christmas from all of us.");
     success(f, "🎄", "You're on the list!", lines, tag);
+    const more = document.createElement("p");
+    const a = document.createElement("a"); a.className = "btn"; a.href = "help.html"; a.textContent = "🎁 See other Christmas help & apply";
+    a.style.cssText = "text-decoration:none;display:inline-block;margin-top:6px"; more.append(a);
+    $(".card.success").append(more);
   });
 });
 
