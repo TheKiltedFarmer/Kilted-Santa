@@ -1087,6 +1087,48 @@ function wishListNode(f, extraLines) {
   acts.append(pr); box.append(acts);
   return box;
 }
+// "How your gifts get there," and one-tap progress updates so the crew doesn't have to chase anyone.
+function deliveryBox(familyId, contact, res) {
+  const box = el("div", "card crew-msgs");
+  const selfDeliver = res.delivery === "Adopter";
+  box.append(el("h3", null, selfDeliver ? "🎁 You're delivering the gifts" : "🛷 Kilted Santas deliver your gifts"));
+  box.append(el("p", "hint", selfDeliver
+    ? "You asked to connect directly with your family, so you'll bring the gifts yourself. Let us know how it's going. When the gifts are delivered, tap \"✅ We delivered!\" so we can check them off."
+    : "Bring your wrapped gifts (with the family number " + familyId + " on every gift) to a drop-off spot, and our Santas will deliver them on Christmas Eve. Tap \"Dropped off\" once they're in."));
+  const spots = res.dropSpots || [];
+  if (!selfDeliver && spots.length) {
+    const ul = el("ul"); ul.style.margin = "4px 0 8px"; ul.style.paddingLeft = "20px";
+    spots.forEach(x => ul.append(el("li", null, x.name + ": " + x.address)));
+    box.append(el("b", null, "📍 Drop-off spots"), ul);
+  } else if (!selfDeliver) {
+    box.append(el("p", "hint", "Not sure where to drop off? Send the crew a message below and an ELF will let you know."));
+  }
+  const status = el("p"); status.style.fontWeight = "800";
+  const label = g => res.status === "Delivered" || g === "Delivered" ? "✅ Delivered. Thank you for being someone's Christmas!" :
+    g === "Gifts in" ? "📦 Your gifts are with us. Thank you!" : g === "Wrapped" ? "🎀 Wrapped and ready" : g === "Shopping" ? "🛒 You're shopping" : "";
+  const draw = () => { status.textContent = label(res.gift) ? "Status: " + label(res.gift) : ""; };
+  draw(); box.append(status);
+  const steps = selfDeliver ? [["shopping", "🛒 I'm shopping", "Shopping"], ["ready", "🎀 Wrapped & ready", "Wrapped"], ["delivered", "✅ We delivered!", "Delivered"]]
+    : [["shopping", "🛒 I'm shopping", "Shopping"], ["dropped", "📦 Dropped off", "Gifts in"]];
+  const row = el("div", "actions");
+  const msg = el("div", "msg err"); msg.setAttribute("role", "alert");
+  steps.forEach(([step, text, gift]) => {
+    const b = el("button", "btn" + (step === "delivered" || step === "dropped" ? "" : " ghost"), text); b.type = "button";
+    b.addEventListener("click", async () => {
+      if ((step === "delivered" || step === "dropped") && !b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "Tap again to confirm"; return; }
+      b.disabled = true; msg.classList.remove("show");
+      try {
+        const r = DEMO ? { ok: true, gift, status: gift === "Delivered" ? "Delivered" : res.status } : await send({ type: "adopter_update", familyId, contact, step });
+        if (!r || !r.ok) { msg.textContent = (r && r.error) || "Something went wrong. Please try again."; msg.classList.add("show"); return; }
+        res.gift = r.gift; res.status = r.status; draw();
+      } catch (e) { msg.textContent = "We couldn't save that. Check your connection and try again."; msg.classList.add("show"); }
+      finally { b.disabled = false; b.textContent = text; delete b.dataset.armed; }
+    });
+    row.append(b);
+  });
+  if (res.status !== "Delivered") box.append(row, msg);
+  return box;
+}
 // Adopters talk to the whole crew from here (not a personal inbox), and see the replies.
 function crewMessages(familyId, contact, thread) {
   const box = el("div", "card crew-msgs");
@@ -1150,7 +1192,7 @@ $("#f-mylist").addEventListener("submit", async e => {
     else res = await send({ type: "mylist", familyId, contact });
     if (!res || !res.ok) return showErr(f, (res && res.error) || "Something went wrong. Please try again.");
     f.hidden = true;
-    $("#mylist-result").replaceChildren(wishListNode(res.family, []), crewMessages(familyId, contact, res.thread || []));
+    $("#mylist-result").replaceChildren(deliveryBox(familyId, contact, res), wishListNode(res.family, []), crewMessages(familyId, contact, res.thread || []));
   } catch (err) { showErr(f, "We couldn't reach the sign-up sheet. Check your connection and try again."); }
   finally { btn.disabled = false; btn.textContent = "Show the wish list"; }
 });

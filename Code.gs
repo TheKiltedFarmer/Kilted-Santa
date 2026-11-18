@@ -101,7 +101,7 @@ const FAMILY_HEADERS = [
   'Adopted by', 'Adopter phone', 'Adopter email', 'Connection type',
   'Handled by', 'Gift progress', 'Santa team', 'Stop #', 'Team notes',
   'Request type', 'Requested by', 'Swing-by notes', 'Flag',
-  'Family told', 'Family contacted', 'Lat', 'Lng', 'Mapped address', 'Adopter messages', 'Help list sent',
+  'Family told', 'Family contacted', 'Lat', 'Lng', 'Mapped address', 'Adopter messages', 'Help list sent', 'Delivered by',
   'Kids data — do not edit'
 ];
 
@@ -234,6 +234,7 @@ function doPost(e) {
         case 'swingby':   return addSwingBy_(data, null);
         case 'mylist':    return myList_(data);
         case 'adopter_msg': return adopterMsg_(data);
+        case 'adopter_update': return adopterUpdate_(data);
         default:          return { ok: false, error: 'Unknown form.' };
       }
     }));
@@ -415,7 +416,26 @@ function sendWishList_(r, name, email) {
 function myList_(d) {
   const m = adopterMatch_(d);
   if (!m.ok) return m;
-  return { ok: true, family: publicFam_(m.r), thread: adopterView_(threadOf_(m.r)) };
+  return { ok: true, family: publicFam_(m.r), thread: adopterView_(threadOf_(m.r)),
+    delivery: deliveryOf_(m.r), gift: String(m.r['Gift progress'] || 'Not started'), status: String(m.r['Status'] || ''),
+    dropSpots: publicSponsors_().filter(function (x) { return x.dropoff && x.address; }).map(function (x) { return { name: x.name, address: x.address }; }) };
+}
+// Adopters update their own progress from the wish-list page (hands-off for the crew).
+function adopterUpdate_(d) {
+  const m = adopterMatch_(d);
+  if (!m.ok) return m;
+  const r = m.r, id = String(r['Family #']), who = String(r['Adopted by'] || 'Adopter');
+  const delivery = deliveryOf_(r);
+  const steps = delivery === 'Adopter' ? { shopping: 'Shopping', ready: 'Wrapped', delivered: 'Delivered' } : { shopping: 'Shopping', dropped: 'Gifts in' };
+  const step = steps[d.step];
+  if (!step) return { ok: false, error: 'That update doesn\'t fit this family.' };
+  const fields = { 'Gift progress': step };
+  if (step === 'Delivered') fields['Status'] = 'Delivered';
+  const labels = { shopping: 'is shopping 🛒', ready: 'has gifts wrapped and ready 🎀', delivered: 'delivered the gifts 🎄', dropped: 'dropped off the gifts with us 📦' };
+  fields['Adopter messages'] = addToThread_(r, 'update', who, labels[d.step]);
+  set_(m.fam, r._row, fields);
+  logAs_('Sign-up page', firstName_(who) + ', the adopter of Family ' + id + ', ' + labels[d.step]);
+  return { ok: true, gift: step, status: fields['Status'] || String(r['Status']) };
 }
 // What the adopter sees of the conversation: ELF first names only.
 function adopterView_(t) {
@@ -486,7 +506,7 @@ function adopterTask_(id, adopter, connection, by) {
   addTask_(by, {
     'Title': '🤝 Say hi to ' + firstName_(adopter) + ', the adopter of Family ' + id,
     'Details': direct
-      ? 'They asked to connect DIRECTLY with the family. Call the family first and make sure they\'re OK sharing contact info, then connect them both ways. Mark the family contacted when you talk to them.'
+      ? 'They asked to connect DIRECTLY with the family, so the adopter delivers the gifts themselves (it\'s on Routes → Adopter deliveries, not a Santa route). Call the family first and make sure they\'re OK sharing contact info, then connect them both ways. Mark the family contacted when you talk to them.'
       : 'Introduce yourself, answer any questions about sizes or wishes, and set up how the gifts get to us. Reply to them from the Families tab (Family ' + id + ').',
     'Area': 'Adoptions', 'Family #': String(id) });
   return true;
@@ -790,6 +810,13 @@ function state_(ctx) {
   };
 }
 
+// Who gets the gifts to the family: Kilted Santas (on a route) or the adopter themselves.
+// "Directly with the family" adoptions default to the adopter; an Adoption ELF can switch either way.
+function deliveryOf_(r) {
+  const set = String(r['Delivered by'] || '');
+  if (set === 'Adopter' || set === 'Kilted Santa') return set;
+  return /directly/i.test(String(r['Connection type'] || '')) && ['Adopted', 'Delivered'].indexOf(String(r['Status'])) >= 0 ? 'Adopter' : 'Kilted Santa';
+}
 function famOut_(r, ctx, plans, lastByFam) {
   let kids = [];
   try { kids = JSON.parse(r['Kids data — do not edit'] || '[]'); } catch (e) {}
@@ -823,6 +850,7 @@ function famOut_(r, ctx, plans, lastByFam) {
     handledBy: String(r['Handled by'] || ''),
     last: (lastByFam || {})[id] || null,
     gift: String(r['Gift progress'] || 'Not started'),
+    delivery: deliveryOf_(r),
     team: team,
     stop: r['Stop #'] === '' ? '' : String(r['Stop #']),
     teamNotes: String(r['Team notes'] || ''),
@@ -1279,9 +1307,20 @@ const HUB_ACTIONS = {
   },
 
   // Routes
+  fam_delivery: function (ctx, d) {
+    if (!ctx.isAdopt) return err_('Only Adoption ELVES and Leads can change who delivers.');
+    const f = famRow_(d.familyId); if (!f) return err_('Family not found.');
+    const who = d.who === 'Adopter' ? 'Adopter' : 'Kilted Santa';
+    const fields = { 'Delivered by': who };
+    if (who === 'Adopter') { fields['Santa team'] = ''; fields['Stop #'] = ''; }
+    set_(f.t, f.r._row, fields);
+    log_(ctx, who === 'Adopter' ? 'set Family ' + f.r['Family #'] + ' as an adopter delivery 🎁' : 'set Family ' + f.r['Family #'] + ' as a Santa delivery 🛷');
+    return { msg: who === 'Adopter' ? 'The adopter delivers this one. It\'s off the Santa routes.' : 'Santas deliver this one. Put it on a route.' };
+  },
   fam_route: function (ctx, d) {
     if (!ctx.isAdopt) return err_('Only Adoption ELVES and Leads can plan routes.');
     const f = famRow_(d.familyId); if (!f) return err_('Family not found.');
+    if (d.team && deliveryOf_(f.r) === 'Adopter') return err_('The adopter delivers Family ' + f.r['Family #'] + ' themselves. Switch it to a Santa delivery first if that changed.');
     const team = clean_(d.team, 40);
     const stop = String(d.stop || '').replace(/\D/g, '').slice(0, 3);
     set_(f.t, f.r._row, { 'Santa team': team, 'Stop #': stop });
