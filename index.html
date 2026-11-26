@@ -224,6 +224,15 @@
   .area-note { padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--gold); font-size: 15px; }
 
   .mylist-card { margin-bottom: 18px; padding: 14px 16px; }
+  .me-card { margin-bottom: 18px; padding: 14px 16px; border: 2px solid var(--gold, #d9a93a); }
+  .me-res > .card { margin-top: 14px; }
+  .me-steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; padding: 0; list-style: none; }
+  .me-steps li { flex: 1 1 0; min-width: 72px; text-align: center; font-size: 13px; font-weight: 700; padding: 6px 4px; border-radius: 10px; background: #eef3ef; color: #6b7a70; }
+  .me-steps li.done { background: #dcefe0; color: #24682f; }
+  .me-steps li.now { background: #24682f; color: #fff; }
+  .me-status h3 { margin: 0 0 4px; }
+  .me-saved { color: #24682f; font-weight: 700; margin-top: 8px; }
+  .me-lock { background: #fff6dc; border-radius: 10px; padding: 8px 12px; margin: 8px 0; }
   .thanks-wall { margin-top: 28px; }
   .thanks-wall h2 { text-align: center; margin: 0 0 4px; }
   .thanks-wall > .hint { text-align: center; margin: 0 auto 16px; max-width: 560px; }
@@ -296,6 +305,24 @@
     <h2>Sign up for help this Christmas</h2>
     <p class="lead">No judgment, no hoops. Tell us a little about your household and what would make Christmas brighter. Your name, address and phone stay private — adopters only see a family number and the kids' ages, sizes and wishes.</p>
     <p class="lead" style="margin-top:-4px"><a href="help.html">🎁 Other Christmas help in Jackson County</a>: toys, holiday meals, coats, and help with heat and bills, with links to apply.</p>
+
+    <div class="card me-card" id="me">
+      <div class="mylist-top">
+        <span><b>Already signed up?</b> Check on your sign-up, fix something, or message us. No password needed.</span>
+        <button class="btn ghost small" type="button" id="me-open">📝 My sign-up</button>
+      </div>
+      <form id="f-me" novalidate hidden style="margin-top:12px">
+        <div class="grid">
+          <label class="f">Phone or email you signed up with<input type="text" name="contact" autocomplete="tel"></label>
+          <label class="f" id="me-zip-wrap">ZIP code<input type="text" name="zip" inputmode="numeric" maxlength="10" autocomplete="postal-code"></label>
+          <label class="f" id="me-id-wrap" hidden>Family number<input type="text" name="familyId" placeholder="e.g. KS-012" autocapitalize="characters"></label>
+        </div>
+        <p class="hint" style="margin:8px 0 0"><button type="button" class="linkish" id="me-swap" style="background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit">Moved since you signed up? Use your family number instead</button></p>
+        <div class="actions" style="margin-top:12px"><button class="btn" type="submit">Show my sign-up</button></div>
+        <div class="msg err" role="alert"></div>
+      </form>
+      <div id="me-result" class="me-res"></div>
+    </div>
 
     <form id="f-family" class="card" novalidate>
       <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -904,7 +931,7 @@ $("#f-family").addEventListener("submit", e => {
     const tag = document.createElement("div");
     tag.className = "famno"; tag.textContent = "Family " + (res.familyNumber || "");
     const lines = [
-      "Save your family number in case you need to reach us.",
+      "Save your family number in case you need to reach us. To check on your sign-up or fix something later, tap “📝 My sign-up” at the top of this page and enter your phone number and ZIP code.",
       "Our team will look over your sign-up and keep in touch by " + contactPref + " as Christmas gets closer."
     ];
     if (res.inArea === false || (res.inArea === undefined && !inArea))
@@ -1095,6 +1122,11 @@ function deliveryBox(familyId, contact, res) {
   box.append(el("p", "hint", selfDeliver
     ? "You asked to connect directly with your family, so you'll bring the gifts yourself. Let us know how it's going. When the gifts are delivered, tap \"✅ We delivered!\" so we can check them off."
     : "Bring your wrapped gifts (with the family number " + familyId + " on every gift) to a drop-off spot, and our Santas will deliver them on Christmas Eve. Tap \"Dropped off\" once they're in."));
+  if (res.deadline && res.status !== "Delivered") {
+    const due = el("p"); due.style.cssText = "font-weight:800;margin:4px 0 8px";
+    due.textContent = "🗓️ " + (selfDeliver ? "Please deliver by " : "Please drop gifts off by ") + res.deadline + ".";
+    box.append(due);
+  }
   const spots = res.dropSpots || [];
   if (!selfDeliver && spots.length) {
     const ul = el("ul"); ul.style.margin = "4px 0 8px"; ul.style.paddingLeft = "20px";
@@ -1190,12 +1222,234 @@ $("#f-mylist").addEventListener("submit", async e => {
     let res;
     if (DEMO) { await wait(400); const d = DEMO_FAMILIES.find(x => x.id.toLowerCase() === familyId.toLowerCase().replace(/^ks(?!-)/, "ks-")); res = d ? { ok: true, family: d } : { ok: false, error: "We couldn't find that family with that email or phone." }; }
     else res = await send({ type: "mylist", familyId, contact });
+    if (res && res.isFamily) {
+      meOpen({ contact, familyId });
+      $("#me-id-wrap").hidden = false; $("#me-zip-wrap").hidden = true;
+      $("#f-me").requestSubmit ? $("#f-me").requestSubmit() : $("#f-me button[type=submit]").click();
+      return;
+    }
     if (!res || !res.ok) return showErr(f, (res && res.error) || "Something went wrong. Please try again.");
     f.hidden = true;
     $("#mylist-result").replaceChildren(deliveryBox(familyId, contact, res), wishListNode(res.family, []), crewMessages(familyId, contact, res.thread || []));
   } catch (err) { showErr(f, "We couldn't reach the sign-up sheet. Check your connection and try again."); }
   finally { btn.disabled = false; btn.textContent = "Show the wish list"; }
 });
+
+/* ---------- MY SIGN-UP (families check on / fix / message about their own sign-up) ---------- */
+const me = { auth: null, data: null };
+function meOpen(prefill) {
+  showPanel("family", false);
+  const f = $("#f-me"); f.hidden = false; $("#me-result").replaceChildren();
+  if (prefill) {
+    if (prefill.contact) f.elements.contact.value = prefill.contact;
+    if (prefill.familyId) { f.elements.familyId.value = prefill.familyId; $("#me-id-wrap").hidden = false; $("#me-zip-wrap").hidden = true; }
+  }
+  setTimeout(() => $("#me").scrollIntoView({ block: "start", behavior: "smooth" }), 50);
+}
+$("#me-open").addEventListener("click", () => { const f = $("#f-me"); f.hidden = !f.hidden; if (!f.hidden) f.elements.contact.focus(); });
+$("#me-swap").addEventListener("click", () => {
+  const useId = $("#me-id-wrap").hidden;
+  $("#me-id-wrap").hidden = !useId; $("#me-zip-wrap").hidden = useId;
+  $("#me-swap").textContent = useId ? "Use your ZIP code instead" : "Moved since you signed up? Use your family number instead";
+});
+async function meCall(payload) {
+  if (DEMO) { await wait(400); return { ok: false, error: "Preview mode: sign-ups aren't connected yet." }; }
+  return send(Object.assign({}, me.auth, payload));
+}
+$("#f-me").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target; clearErr(f);
+  const contact = val(f, "contact"), useId = !$("#me-id-wrap").hidden;
+  const familyId = useId ? val(f, "familyId") : "", zip = useId ? "" : val(f, "zip");
+  if (!contact || (useId ? !familyId : zip.replace(/\D/g, "").length < 5))
+    return showErr(f, "Please enter the phone or email you signed up with, and your " + (useId ? "family number." : "ZIP code."));
+  const btn = $("button[type=submit]", f); btn.disabled = true; btn.textContent = "Looking…";
+  try {
+    me.auth = { contact, familyId, zip };
+    const res = await meCall({ type: "family_me" });
+    if (!res || !res.ok) { me.auth = null; return showErr(f, (res && res.error) || "Something went wrong. Please try again."); }
+    me.auth = { contact, familyId: res.id };   // from here on, the family number (so a new ZIP or phone still works)
+    f.hidden = true; meDraw(res);
+  } catch (err) { me.auth = null; showErr(f, "We couldn't reach the sign-up sheet. Check your connection and try again."); }
+  finally { btn.disabled = false; btn.textContent = "Show my sign-up"; }
+});
+function meField(label, name, value, attrs) {
+  const l = el("label", "f" + (attrs && attrs.full ? " full" : ""), label);
+  const i = document.createElement(attrs && attrs.textarea ? "textarea" : "input");
+  if (!(attrs && attrs.textarea)) i.type = (attrs && attrs.type) || "text";
+  i.name = name; i.value = value || "";
+  if (attrs && attrs.placeholder) i.placeholder = attrs.placeholder;
+  if (attrs && attrs.inputmode) i.inputMode = attrs.inputmode;
+  l.append(i); return l;
+}
+function meForm(title, build, collect, btnText) {
+  const card = el("div", "card");
+  card.append(el("h3", null, title));
+  const form = document.createElement("form"); form.noValidate = true;
+  build(form);
+  const btn = el("button", "btn", btnText || "Save changes"); btn.type = "submit";
+  const actions = el("div", "actions"); actions.style.marginTop = "12px"; actions.append(btn);
+  const msg = el("div", "msg err"); msg.setAttribute("role", "alert");
+  form.append(actions, msg);
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); msg.classList.remove("show");
+    const payload = collect(form);
+    if (typeof payload === "string") { msg.textContent = payload; msg.classList.add("show"); return; }
+    btn.disabled = true; const old = btn.textContent; btn.textContent = "Saving…";
+    try {
+      const res = await meCall(Object.assign({ type: "family_save" }, payload));
+      if (!res || !res.ok) { msg.textContent = (res && res.error) || "Something went wrong. Please try again."; msg.classList.add("show"); return; }
+      // If they changed the phone or email they looked themselves up with, keep using the new one.
+      const c = me.auth.contact;
+      if (payload.phone !== undefined && c.indexOf("@") < 0) me.auth.contact = res.phone;
+      if (payload.email !== undefined && c.indexOf("@") > 0 && res.email) me.auth.contact = res.email;
+      meDraw(res, res.msg);
+    } catch (err) { msg.textContent = "We couldn't save that. Check your connection and try again. Your changes are still here."; msg.classList.add("show"); }
+    finally { btn.disabled = false; btn.textContent = old; }
+  });
+  card.append(form);
+  return card;
+}
+function meKidRow(k, box) {
+  const d = el("div", "kid");
+  d.innerHTML = `
+    <div class="kid-head"><h3></h3><button type="button" class="btn ghost small rm">Remove</button></div>
+    <div class="grid">
+      <label class="f">First name <span class="hint">(private)</span><input type="text" data-k="name"></label>
+      <label class="f">Age <span class="req">*</span><input type="text" data-k="age" inputmode="numeric"></label>
+      <label class="f">Boy / girl<select data-k="gender"><option value="">Prefer not to say</option><option>Boy</option><option>Girl</option></select></label>
+      <label class="f">Clothing size<input type="text" data-k="clothing"></label>
+      <label class="f">Shoe size<input type="text" data-k="shoe"></label>
+      <label class="f">Favorite things<input type="text" data-k="likes"></label>
+      <label class="f full">Christmas wishes <span class="req">*</span><textarea data-k="wishes"></textarea></label>
+    </div>`;
+  $$("[data-k]", d).forEach(i => { i.value = k[i.dataset.k] || ""; });
+  $(".rm", d).addEventListener("click", () => { if (box.children.length > 1) { d.remove(); meRenumber(box); } });
+  box.append(d); meRenumber(box);
+}
+function meRenumber(box) { [...box.children].forEach((k, i) => { $("h3", k).textContent = "Child " + (i + 1); $(".rm", k).hidden = box.children.length === 1; }); }
+function meDraw(res, savedMsg) {
+  me.data = res;
+  const out = $("#me-result");
+  const parts = [];
+  // 1. Where things stand
+  const st = el("div", "card me-status");
+  const tag = el("div", "famno", "Family " + res.id); st.append(tag);
+  if (res.step !== "notlisted") {
+    const order = ["checking", "approved", "adopted", "delivered"], at = order.indexOf(res.step);
+    const ul = el("ol", "me-steps"); ul.setAttribute("aria-label", "Where your sign-up is");
+    ["Signed up", "Approved", "Adopted", "Delivered"].forEach((t, i) => { const li = el("li", i < at ? "done" : i === at ? "now" : "", (i < at ? "✓ " : "") + t); if (i === at) li.setAttribute("aria-current", "step"); ul.append(li); });
+    st.append(ul);
+  }
+  st.append(el("h3", null, res.title), el("p", null, res.text));
+  if (savedMsg) st.append(el("p", "me-saved", "✅ " + savedMsg));
+  const help = el("p"); const a = el("a", null, "🎁 Other Christmas help in Jackson County, with links to apply"); a.href = "help.html"; help.append(a); st.append(help);
+  parts.push(st);
+  // 2. Contact info
+  parts.push(meForm("📞 How we reach you", form => {
+    const g = el("div", "grid");
+    g.append(meField("Phone", "phone", res.phone, { type: "tel" }), meField("Email", "email", res.email, { type: "email" }));
+    const pref = el("label", "f", "Best way to reach you"); const sel = document.createElement("select"); sel.name = "contactPref";
+    ["Text", "Phone call", "Email"].forEach(o => { const op = el("option", null, o); if (o === res.contactPref) op.selected = true; sel.append(op); }); pref.append(sel); g.append(pref);
+    form.append(g);
+    form.append(el("p", "hint", "Address on file: " + [res.addressHint, res.town, res.zip].filter(Boolean).join(" · ") + ". (We only show part of it, to keep it private.)"));
+    const mv = el("details"); mv.append(el("summary", null, "🏠 We moved / my address is wrong"));
+    const g2 = el("div", "grid"); g2.style.marginTop = "8px";
+    g2.append(meField("New street address", "address", "", { full: true }), meField("City / Town", "town", ""), meField("ZIP", "zipNew", "", { inputmode: "numeric" }));
+    mv.append(g2); form.append(mv);
+  }, form => {
+    const p = { phone: val(form, "phone"), email: val(form, "email"), contactPref: val(form, "contactPref") };
+    if (val(form, "address")) {
+      if (!val(form, "town") || val(form, "zipNew").replace(/\D/g, "").length < 5) return "Please add the town and ZIP code for your new address.";
+      Object.assign(p, { address: val(form, "address"), town: val(form, "town"), zipNew: val(form, "zipNew") });
+    }
+    return p;
+  }));
+  // 3. Wish list
+  if (res.canEditWishes) {
+    parts.push(meForm("🎁 Your wish list", form => {
+      form.append(el("p", "hint", "Change sizes or wishes, or add or remove a child. Adopters never see names, only ages, sizes and wishes."));
+      const box = el("div"); res.kids.forEach(k => meKidRow(k, box)); if (!res.kids.length) meKidRow({}, box);
+      const add = el("button", "btn ghost small", "+ Add a child"); add.type = "button"; add.addEventListener("click", () => meKidRow({}, box));
+      const g = el("div", "grid"); g.style.marginTop = "12px";
+      g.append(meField("Wishes for the whole household (optional)", "household", res.household, { full: true, textarea: true }),
+               meField("A note to your adopter (optional)", "note", res.note, { full: true, textarea: true }));
+      form.append(box, add, g);
+      form._kids = box;
+    }, form => {
+      const kids = [...form._kids.children].map(k => { const o = {}; $$("[data-k]", k).forEach(i => o[i.dataset.k] = i.value.trim()); return o; })
+        .filter(k => k.age || k.wishes || k.name);
+      if (!kids.length) return "Please keep at least one child on your list.";
+      if (kids.some(k => !k.age || !k.wishes)) return "Please add an age and wishes for each child.";
+      return { kids, household: val(form, "household"), note: val(form, "note") };
+    }));
+  } else if (res.kids.length) {
+    const c = el("div", "card"); c.append(el("h3", null, "🎁 Your wish list"));
+    c.append(el("div", "me-lock", res.step === "notlisted" ? "Your wish list is saved with us." : "Your family has been adopted, so the wish list is locked (your sponsor may already be shopping). Need to change a size or a wish? Send us a message below and we'll pass it along."));
+    res.kids.forEach((k, i) => c.append(el("p", null, (k.name || "Child " + (i + 1)) + (k.age ? ", " + k.age : "") + (k.wishes ? ": " + k.wishes : ""))));
+    parts.push(c);
+  }
+  // 4. Proof of address (only while we're still checking)
+  if (res.step === "checking" || res.step === "notlisted") {
+    let proof = null;
+    parts.push(meForm("🏠 Send a new proof of address", form => {
+      form.append(el("p", "hint", "Only if an ELF asked for a clearer picture, or you moved. A photo of your ID or a bill with your name and address works. It stays private."));
+      const lab = el("label", "drop"); const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*,application/pdf";
+      const txt = el("span", "drop-txt", "📎 Tap to add a picture or PDF"); lab.append(inp, txt); form.append(lab);
+      inp.addEventListener("change", async () => {
+        proof = null; const file = inp.files && inp.files[0]; if (!file) return;
+        txt.textContent = "Getting it ready…";
+        try { const p = await prepFile(file, 2000); proof = { name: p.name, type: p.type, data: p.data }; txt.textContent = "✓ Added: " + file.name; }
+        catch (err) { txt.textContent = err.message || "That file didn't work. Please try another."; inp.value = ""; }
+      });
+    }, () => proof ? { proof } : "Add a picture or PDF first.", "Send it"));
+  }
+  // 5. Messages
+  parts.push(meMessages(res));
+  const done = el("p"); done.style.cssText = "text-align:center;margin:14px 0 0";
+  const db = el("button", "btn ghost small", "✓ Done"); db.type = "button";
+  db.addEventListener("click", () => { me.auth = null; me.data = null; out.replaceChildren(); const sf = $("#f-family"); if (sf) sf.hidden = false; $("#me").scrollIntoView({ block: "start" }); });
+  done.append(db, el("span", "hint", "  Signing up a different family? Tap Done.")); parts.push(done);
+  out.replaceChildren(...parts);
+  const signup = $("#f-family"); if (signup) signup.hidden = true;   // so nobody signs up twice by accident
+  if (savedMsg) st.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+function meMessages(res) {
+  const box = el("div", "card crew-msgs");
+  box.append(el("h3", null, "💬 Message the Kilted Santa crew"));
+  const list = el("div", "thread");
+  const t = res.thread || [];
+  list.replaceChildren(...t.map(x => {
+    const m = el("div", "tmsg " + (x.from === "crew" ? "crew" : "me"));
+    m.append(el("b", null, x.from === "crew" ? x.who + " (ELF)" : x.from === "update" ? "You updated your sign-up" : "You"));
+    m.append(el("span", "hint", " · " + new Date(x.when).toLocaleDateString(undefined, { month: "short", day: "numeric" })));
+    if (x.from !== "update" || !/^✏️ Updated their /.test(x.text)) m.append(el("div", null, x.text));
+    else m.append(el("div", null, x.text.replace(/^✏️ Updated their /, "✏️ Changed: ")));
+    return m;
+  }));
+  if (!t.length) list.append(el("p", "hint", "Questions? Something we should know? Send us a note. It goes to the whole crew, and replies come by email (or we'll call or text if you don't have email)."));
+  const form = document.createElement("form"); form.noValidate = true;
+  const ta = document.createElement("textarea"); ta.rows = 3; ta.maxLength = 1000; ta.placeholder = "Hi! I wanted to let you know…";
+  const btn = el("button", "btn", "Send message"); btn.type = "submit";
+  const msg = el("div", "msg err"); msg.setAttribute("role", "alert");
+  const actions = el("div", "actions"); actions.append(btn);
+  form.append(ta, actions, msg);
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); msg.classList.remove("show");
+    const text = ta.value.trim();
+    if (!text) { msg.textContent = "Write your message first."; msg.classList.add("show"); return; }
+    btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      const r = await meCall({ type: "family_msg", message: text });
+      if (!r || !r.ok) { msg.textContent = (r && r.error) || "Something went wrong. Please try again."; msg.classList.add("show"); return; }
+      const nb = meMessages(r); box.replaceWith(nb);
+      const ok = el("p", "hint", "✅ Sent! An ELF will get back to you, usually within a day or two."); $("form", nb).after(ok);
+    } catch (err) { msg.textContent = "We couldn't send that. Check your connection and try again. Your message is still here."; msg.classList.add("show"); }
+    finally { btn.disabled = false; btn.textContent = "Send message"; }
+  });
+  box.append(list, form);
+  return box;
+}
 
 /* ---------- SWING-BY ---------- */
 (function swingBy() {
@@ -1339,7 +1593,8 @@ async function loadThanks() {
 loadThanks();
 
 /* ---------- open the right section from the link (runs last, once everything is set up) ---------- */
-if (startHash === "mylist") { showPanel("adopt", false); $("#f-mylist").hidden = false; setTimeout(() => $("#mylist").scrollIntoView({ block: "start" }), 50); }
+if (startHash === "me") meOpen();
+else if (startHash === "mylist") { showPanel("adopt", false); $("#f-mylist").hidden = false; setTimeout(() => $("#mylist").scrollIntoView({ block: "start" }), 50); }
 else if (deepFamily) showPanel("adopt", false);
 else if (["family", "swingby", "adopt", "volunteer"].includes(startHash)) showPanel(startHash, false);
 </script>

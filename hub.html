@@ -257,6 +257,7 @@
       <div id="login-msg" class="banner hidden" role="alert"></div>
       <p class="small muted" style="text-align:center;margin:0">Not an ELF yet? <a id="signup-link" href="./#volunteer">Sign up to volunteer</a>, and a Lead will send your code.</p>
       <p class="small muted" style="text-align:center;margin:0">New to the crew? <a href="guide.html">Read the ELF Guide</a>.</p>
+      <div class="banner" style="text-align:center;margin:4px 0 0">This page is only for volunteers. <b>Signed up for help?</b> <a href="./#me">Check on your sign-up here</a>. <b>Adopted a family?</b> <a href="./#mylist">See their wish list here</a>. No code needed.</div>
     </div>
   </form>
 </section>
@@ -336,7 +337,7 @@ let cred = null, me = null, S = null, memCred = null;
 const ui = {
   tab: "home", famFilter: null, famSearch: "", open: new Set(), taskFilter: "open", taskArea: "",
   newTask: null, storiesAll: false, crewWants: "", pendingRender: false, busy: false,
-  drafts: {}, inflight: 0, lastSubmit: null
+  drafts: {}, inflight: 0, lastSubmit: null, review: false, reviewSkip: null, proofCache: {}
 };
 
 /* ---------- drafts: whatever you've typed survives refreshes ---------- */
@@ -573,7 +574,7 @@ function viewHome() {
   const stats = h("div", { class: "stats" },
     stat(F.filter(f => !isSwing(f)).length, "families signed up", () => go("families", { famFilter: "all" })),
     stat(by("Swing-by request"), "swing-by requests 🎅", () => go("routes")),
-    me.isAdopt ? stat(by("Pending review"), "need review", () => go("families", { famFilter: "Pending review" }), by("Pending review") > 0) : null,
+    me.isAdopt ? stat(by("Pending review"), "need review", () => go("families", { review: by("Pending review") > 0, famFilter: "Pending review" }), by("Pending review") > 0) : null,
     stat(by("Available"), "waiting for an adopter", () => go("families", { famFilter: "Available" })),
     stat(by("Adopted"), "adopted", () => go("families", { famFilter: "Adopted" })),
     stat(wrapped, "wrapped & ready", () => go("families", { famFilter: "Adopted" })),
@@ -595,6 +596,7 @@ function viewHome() {
     h("div", { class: "card" }, waysToHelp()),
     mine.length ? h("div", null,
       h("div", { class: "section-title" }, h("h2", null, "On your plate")),
+      mine.some(isStuck) ? h("div", { class: "banner", style: "margin-bottom:10px" }, "⏳ You've had some of these a while. A quick “📝 Add an update” lets the crew know where things stand, or tap “Let someone else take it” if life got busy. No guilt, ever!") : null,
       h("div", { class: "stack" }, mine.map(taskCard))) : null,
     activityFeed()
   );
@@ -656,6 +658,18 @@ const DAY = 86400000;
 const olderThan = (iso, days) => iso && Date.now() - new Date(iso).getTime() > days * DAY;
 const plural = (n, one, many) => n + " " + (n === 1 ? one : many);
 const idList = list => list.slice(0, 6).map(f => f.id).join(", ") + (list.length > 6 ? " +" + (list.length - 6) + " more" : "");
+// Gift deadline: one date for everyone, set by a Lead.
+function daysLeft(iso) {
+  const p = String(iso).split("-").map(Number), n = new Date();
+  return Math.round((Date.UTC(p[0], p[1] - 1, p[2]) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / DAY);
+}
+const giftsIn = f => f.status === "Delivered" || (f.delivery !== "Adopter" && (S.giftDoneSteps || ["Gifts in", "Wrapped", "Loaded", "Delivered"]).includes(f.gift));
+const giftsLate = f => f.status === "Adopted" && !isSwing(f) && !giftsIn(f);
+// Tasks someone claimed but hasn't touched in a week.
+const lastTouch = t => Math.max(new Date(t.claimedAt || t.created).getTime() || 0, ...(t.updates || []).map(u => new Date(u.when).getTime() || 0));
+const stuckDays = t => Math.floor((Date.now() - lastTouch(t)) / DAY);
+const isStuck = t => t.status === "Claimed" && stuckDays(t) >= 7;
+const realTeams = () => teamNames().filter(t => t.toLowerCase() !== String(S.randomRoute || "").toLowerCase());
 function needsAttention() {
   const F = S.families.filter(f => !isSwing(f)), rows = [];
   const add = (n, ico, title, sub, label, fn) => { if (n) rows.push([ico, title, sub, label, fn]); };
@@ -663,8 +677,11 @@ function needsAttention() {
   const flagged = pend.filter(f => f.flag || (f.inArea && f.inArea !== "Yes")).length;
   add(pend.length, "🔍", plural(pend.length, "family is", "families are") + " waiting for review",
     [pend.some(f => olderThan(f.submitted, 3)) ? "Some have waited 3+ days" : "", flagged ? flagged + " flagged or outside the area" : ""].filter(Boolean).join(" · ") || "Check their proof and approve them",
-    "Review", () => go("families", { famFilter: "Pending review" }));
+    "⚡ Review", () => go("families", { review: true, famFilter: "Pending review" }));
   const adopted = F.filter(f => f.status === "Adopted");
+  const famWaiting = F.filter(familyWrote);
+  add(famWaiting.length, "💬", plural(famWaiting.length, "family is", "families are") + " waiting on a reply",
+    idList(famWaiting) + " · they wrote in from their sign-up page. Reply from the family's card.", "Reply", () => go("families", { famFilter: "messages" }));
   const waiting = F.filter(awaitingReply);
   add(waiting.length, "💬", plural(waiting.length, "adopter is", "adopters are") + " waiting on a reply",
     idList(waiting) + " · they wrote in from the sign-up page. Reply from the family's card.", "Reply", () => go("families", { famFilter: "messages" }));
@@ -681,12 +698,26 @@ function needsAttention() {
   const notContacted = adopted.filter(f => !f.contacted && !/^No email/.test(f.told) && f.told);
   add(notContacted.length, "☎️", plural(notContacted.length, "adopted family hasn't", "adopted families haven't") + " talked with an ELF yet",
     idList(notContacted) + " · they got the email; an ELF still needs to set up delivery", "See them", () => go("families", { famFilter: "contact" }));
+  const dl = S.settings && S.settings.giftDeadline;
+  if (dl) {
+    const left = daysLeft(dl), late = adopted.filter(giftsLate);
+    if (left < 0) add(late.length, "⏰", plural(late.length, "family's gifts are", "families' gifts are") + " past the deadline",
+      idList(late) + " · they were due " + S.settings.deadlineText + ". A quick call to the adopter usually sorts it out.", "See them", () => go("families", { famFilter: "late" }));
+    else if (left <= 7) add(late.length, "🗓️", plural(late.length, "family's gifts aren't", "families' gifts aren't") + " in yet",
+      idList(late) + " · due " + (left === 0 ? "today" : "in " + plural(left, "day", "days")) + " (" + S.settings.deadlineText + ")", "See them", () => go("families", { famFilter: "late" }));
+  }
   const noRoute = adopted.filter(f => !f.team && f.delivery !== "Adopter");
-  if (new Date().getMonth() === 11 || noRoute.length >= 10)
+  if (!realTeams().length && noRoute.length)
+    add(1, "🛷", "No Santa teams set up yet", plural(noRoute.length, "adopted family needs", "adopted families need") + " a Santa delivery. " +
+      (me.isLead ? "Set up teams on the Routes tab: type a team name next to each Santa." : "A Lead sets up the teams on the Routes tab."), "Routes", () => go("routes"));
+  else if (new Date().getMonth() === 11 || noRoute.length >= 10)
     add(noRoute.length, "🛷", plural(noRoute.length, "adopted family isn't", "adopted families aren't") + " on a route yet", idList(noRoute), "Routes", () => go("routes"));
   const owed = (S.sponsors || []).filter(needsThanks);
   add(owed.length, "💚", plural(owed.length, "business or sponsor needs", "businesses and sponsors need") + " a thank-you",
     owed.slice(0, 4).map(x => x.name).join(", "), "Thank-yous", () => go("thanks", { spFilter: "thank" }));
+  const stuck = S.tasks.filter(isStuck);
+  add(stuck.length, "⏳", plural(stuck.length, "task has", "tasks have") + " been claimed a week+ with no update",
+    stuck.slice(0, 3).map(t => firstName(t.claimedBy) + ": " + t.title).join(" · ") + " · check in, or put it back on the board", "See them", () => go("tasks", { taskFilter: "stuck" }));
   const stale = S.tasks.filter(t => t.status === "Open" && olderThan(t.created, 3));
   add(stale.length, "📌", plural(stale.length, "task has", "tasks have") + " sat unclaimed for 3+ days", stale.slice(0, 3).map(t => t.title).join(" · "), "Tasks", () => go("tasks", { taskFilter: "open" }));
   if (me.isLead) {
@@ -695,7 +726,7 @@ function needsAttention() {
       waiting.slice(0, 4).map(c => c.name).join(", ") + " · they haven't gotten their ELF code yet", "Crew", () => go("crew"));
     const never = S.crew.filter(c => c.access === "Approved" && !c.lastSeen && !c.me);
     add(never.length, "🔑", plural(never.length, "ELF hasn't", "ELVES haven't") + " signed in yet",
-      never.slice(0, 4).map(c => c.name).join(", ") + " · resend their code with one tap", "Crew", () => go("crew"));
+      never.slice(0, 4).map(c => c.name).join(", ") + " · one tap resends everyone's sign-in steps", "📨 Resend all", resendAll);
     const quiet = S.crew.filter(c => c.access === "Approved" && c.lastSeen && olderThan(c.lastSeen, 14) && !c.me);
     add(quiet.length, "💤", plural(quiet.length, "ELF hasn't", "ELVES haven't") + " been in the hub for 2+ weeks",
       quiet.slice(0, 4).map(c => c.name).join(", "), "Crew", () => go("crew"));
@@ -707,6 +738,11 @@ function needsAttention() {
       h("div", { class: "grow" }, h("b", { text: title }), sub ? h("div", { class: "small muted", text: sub }) : null),
       h("button", { class: "btn sm", onclick: e => fn(e.currentTarget) }, label)))
       : h("p", { class: "small muted", style: "margin:0" }, "Every family is reviewed and in touch, and every ELF has signed in. Nice work, crew!"));
+}
+async function resendAll(btn) {
+  const r = await act(btn, "crew_resend_all", {});
+  const t = r && r.extra && r.extra.textOnly;
+  if (t && t.length) showCode({ ...t[0], emailed: false, existing: true });
 }
 function stat(n, label, onclick, alert) {
   return h("button", { class: "stat" + (alert ? " alert" : ""), onclick }, h("b", { text: n }), h("span", { text: label }));
@@ -742,11 +778,13 @@ function waysToHelp() {
 
 /* ================= TASKS ================= */
 function viewTasks() {
-  const filters = [["open", "Open"], ["mine", "Mine"], ["claimed", "In progress"], ["done", "Done"], ["all", "All"]];
+  const nStuck = S.tasks.filter(isStuck).length;
+  const filters = [["open", "Open"], ["mine", "Mine"], ["claimed", "In progress"], nStuck || ui.taskFilter === "stuck" ? ["stuck", "⏳ No update in a week (" + nStuck + ")"] : null, ["done", "Done"], ["all", "All"]].filter(Boolean);
   let list = S.tasks.slice().reverse();
   if (ui.taskFilter === "open") list = list.filter(t => t.status === "Open");
   if (ui.taskFilter === "mine") list = list.filter(t => t.claimedBy === me.name && t.status !== "Done");
   if (ui.taskFilter === "claimed") list = list.filter(t => t.status === "Claimed");
+  if (ui.taskFilter === "stuck") list = list.filter(isStuck);
   if (ui.taskFilter === "done") list = list.filter(t => t.status === "Done");
   if (ui.taskArea) list = list.filter(t => t.area === ui.taskArea);
   return h("div", { class: "stack" },
@@ -798,6 +836,7 @@ function taskCard(t) {
         : t.status === "Claimed" ? h("span", { class: "badge b-available", text: (mineT ? "You've" : firstName(t.claimedBy) + " has") + " got it" })
         : h("span", { class: "badge b-adopted", text: "Done by " + firstName(t.claimedBy) })),
     t.details ? h("p", { class: "small", style: "margin:8px 0 0;white-space:pre-wrap", text: t.details }) : null,
+    isStuck(t) ? h("div", { class: "small", style: "margin-top:6px;color:var(--red);font-weight:700", text: "⏳ No update in " + stuckDays(t) + " days" + (mineT ? ". A quick note helps!" : "") }) : null,
     taskUpdates(t),
     ui.taskDone === t.id ? taskDoneForm(t) : ui.taskNote === t.id ? taskNoteForm(t) : null,
     h("div", { class: "row", style: "margin-top:10px" },
@@ -926,6 +965,30 @@ async function broadcastDialog() {
 // Messages between the adopter and the crew. Adopters write from the sign-up page;
 // ELVES reply here and it's emailed to them. Nothing lands in anyone's personal inbox.
 const awaitingReply = f => (f.thread || []).length && f.thread[f.thread.length - 1].from === "adopter";
+// The family's own messages (from their "My sign-up" page). Updates they make themselves show here too.
+const familyWrote = f => { const t = (f.famThread || []).filter(x => x.from !== "update"); return t.length && t[t.length - 1].from === "family"; };
+function familyThread(f) {
+  const t = f.famThread || [];
+  const form = h("form", { class: "stack", "data-draft": "freply:" + f.id, onsubmit: async e => {
+      e.preventDefault();
+      const text = $("textarea", form).value.trim();
+      if (!text) { toast("Write your reply first.", true); return; }
+      await act($("button[type=submit]", form), "fam_family_reply", { familyId: f.id, text });
+    } },
+    h("textarea", { rows: 3, maxlength: 1500, placeholder: "Write to " + (firstName(f.parent) || "the family") + "…" }),
+    h("div", { class: "row" },
+      h("button", { class: "btn sm", type: "submit" }, f.email ? "✉️ Send to " + (firstName(f.parent) || "the family") : "Save note (no email on file)"),
+      h("span", { class: "tiny muted", text: f.email ? "Emailed to them, with a link back to their sign-up page." : "They have no email. Call or text them too." })));
+  return h("div", { class: "block" },
+    h("h4", { style: "margin:0 0 6px" }, "💬 Messages with the family"),
+    t.length ? h("div", { class: "updates", style: "margin:0 0 8px" }, t.map(x => h("div", { class: "update" },
+      h("b", { text: x.from === "update" ? "✏️ They updated their sign-up" : x.from === "family" ? (firstName(x.who) || "The family") + " (family)" : (x.who === me.name ? "You" : firstName(x.who)) }), " ",
+      h("span", { class: "tiny muted", text: ago(x.when) }),
+      h("div", { style: "white-space:pre-wrap", text: x.from === "update" ? x.text.replace(/^✏️ Updated their /, "Changed: ") : x.text }))))
+      : h("p", { class: "small muted", style: "margin:0 0 6px" }, "No messages yet. Families can check on their sign-up, fix their info and write to the crew from “📝 My sign-up” on the sign-up page."),
+    familyWrote(f) ? h("div", { class: "small", style: "color:var(--red);font-weight:700;margin-bottom:6px" }, "⏳ Waiting on a reply from the crew") : null,
+    form);
+}
 function adopterThread(f) {
   const t = f.thread || [];
   const form = h("form", { class: "stack", "data-draft": "reply:" + f.id, onsubmit: async e => {
@@ -958,13 +1021,14 @@ function confirmInline(btn, label) {
 /* ================= FAMILIES ================= */
 function viewFamilies() {
   const F = S.families;
+  if (ui.review && me.isAdopt) return reviewView();
   if (!ui.famFilter) ui.famFilter = me.isAdopt && F.some(f => f.status === "Pending review") ? "Pending review" : "all";
   const filters = [
     me.isAdopt ? ["Pending review", "Needs review"] : null,
-    ["Available", "Open for adoption"], ["Adopted", "Adopted"], me.isAdopt ? ["contact", "📞 Needs contact"] : null, me.isAdopt ? ["messages", "💬 Adopter messages"] : null, ["Swing-by request", "Swing-bys"], ["Delivered", "Delivered / visited"], ["all", "All"]
+    ["Available", "Open for adoption"], ["Adopted", "Adopted"], S.settings && S.settings.giftDeadline ? ["late", "⏰ Gifts not in"] : null, me.isAdopt ? ["contact", "📞 Needs contact"] : null, me.isAdopt ? ["messages", "💬 Messages"] : null, ["Swing-by request", "Swing-bys"], ["Delivered", "Delivered / visited"], ["all", "All"]
   ].filter(Boolean);
   const needsContact = f => f.status === "Adopted" && !isSwing(f) && !f.contacted;
-  const inFilter = (f, v) => v === "all" || (v === "contact" ? needsContact(f) : v === "messages" ? awaitingReply(f) : f.status === v);
+  const inFilter = (f, v) => v === "all" || (v === "contact" ? needsContact(f) : v === "messages" ? (awaitingReply(f) || familyWrote(f)) : v === "late" ? giftsLate(f) : f.status === v);
   const q = ui.famSearch.trim().toLowerCase();
   let list = F.filter(f => inFilter(f, ui.famFilter));
   if (q) list = list.filter(f => [f.id, f.town, f.adopter, f.parent, f.team, ...f.kids.map(k => k.name)].join(" ").toLowerCase().includes(q));
@@ -974,12 +1038,121 @@ function viewFamilies() {
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Families"),
       h("span", { class: "small muted", text: me.isAdopt ? "You can see private details. Please keep them in the hub." : "Parent names and addresses stay with the adoption team." })),
+    me.isAdopt && F.some(f => f.status === "Pending review") ? h("button", { class: "btn gold", style: "align-self:flex-start", onclick: () => { ui.review = true; ui.reviewSkip = null; render(true); window.scrollTo({ top: 0 }); } },
+      "⚡ Quick review: " + plural(F.filter(f => f.status === "Pending review").length, "family", "families") + " waiting") : null,
     me.isLead && F.some(f => f.status === "Adopted") ? h("div", null, h("button", { class: "btn ghost sm", onclick: broadcastDialog }, "📣 Email all adopters")) : null,
+    me.isAdopt ? deadlineCard() : null,
     me.isAdopt ? helpListCard() : null,
     h("div", { class: "chips" }, filters.map(([v, l]) => h("button", { class: "chip", "aria-pressed": String(ui.famFilter === v),
       onclick: () => { ui.famFilter = v; render(); } }, l + " (" + F.filter(f => inFilter(f, v)).length + ")"))),
     search,
     list.length ? h("div", { class: "stack" }, list.map(famCard)) : h("div", { class: "card empty", text: F.length ? "No families match." : "No families have signed up yet." }));
+}
+/* ---------- quick review: one pending family at a time, oldest first ---------- */
+function reviewView() {
+  const skip = ui.reviewSkip || (ui.reviewSkip = new Set());
+  const all = S.families.filter(f => f.status === "Pending review" && !isSwing(f))
+    .sort((a, b) => String(a.submitted).localeCompare(String(b.submitted)) || a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const left = all.filter(f => !skip.has(f.id));
+  const exit = () => { ui.review = false; ui.reviewSkip = null; render(true); window.scrollTo({ top: 0 }); };
+  const top = h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "⚡ Quick review"), h("button", { class: "btn ghost sm", onclick: exit }, "Done reviewing"));
+  if (!left.length) return h("div", { class: "stack" }, top,
+    h("div", { class: "card empty" }, all.length ? "You skipped the last " + plural(all.length, "family", "families") + ". " : "🎉 All caught up! No families are waiting for review.",
+      all.length ? h("div", { style: "margin-top:10px" }, h("button", { class: "btn sm", onclick: () => { ui.reviewSkip = new Set(); render(true); } }, "Go back through the skipped ones")) : null));
+  const f = left[0];
+  const outside = f.inArea && f.inArea !== "Yes";
+  const next = () => window.scrollTo({ top: 0 });
+  const kids = f.kids.map(k => h("div", { class: "small" }, h("b", { text: (k.name || "Child") + (k.age ? ", " + k.age : "") }), k.wishes ? " · " + k.wishes.slice(0, 120) + (k.wishes.length > 120 ? "…" : "") : ""));
+  return h("div", { class: "stack" }, top,
+    h("p", { class: "small muted", style: "margin:-6px 0 0", text: "Family " + (all.length - left.length + 1) + " of " + all.length + " waiting, oldest first. Check that the proof matches the name and address, then approve. Approving puts them on the Adopt page (first names, ages and wishes only)." }),
+    h("div", { class: "card stack", style: "border:2px solid var(--gold)" },
+      h("div", { class: "row" }, h("h3", { style: "font-size:22px", text: famLabel(f) }),
+        outside ? h("span", { class: "badge b-red", text: "📍 Outside area" }) : null,
+        f.flag ? h("span", { class: "badge b-red", text: "⚠️ Flagged" }) : null,
+        h("span", { class: "tiny muted", style: "margin-left:auto", text: "signed up " + ago(f.submitted) })),
+      f.flag ? h("div", { class: "flag", text: "⚠️ Check this one: " + f.flag }) : null,
+      outside ? h("div", { class: "banner", text: "📍 ZIP " + (f.zip || "?") + (f.town ? " (" + f.town + ")" : "") + " looks like it's outside " + S.serviceArea + ". Their sign-up email already told them we may not reach them. If a Santa can't get there, tap “Outside our area” and they'll get a kind note with 2-1-1 and other help." }) : null,
+      h("dl", { class: "kv" },
+        h("dt", null, "Parent"), h("dd", { text: f.parent || "—" }),
+        h("dt", null, "Address"), h("dd", { text: [f.address, f.town, f.zip].filter(Boolean).join(", ") || "—" }),
+        h("dt", null, "Contact"), h("dd", { text: [f.phone, f.email].filter(Boolean).join(" · ") || "—" }),
+        h("dt", null, "Household"), h("dd", { text: kidsLine(f) + (f.adults ? " · " + f.adults + " adult" + (f.adults === "1" ? "" : "s") : "") }),
+        f.privateNotes ? [h("dt", null, "Notes"), h("dd", { text: f.privateNotes })] : null),
+      h("div", { class: "block" }, h("h4", null, "The kids"), kids),
+      proofBox(f),
+      h("div", { class: "row" },
+        h("button", { class: "btn", onclick: async e => { if (await act(e.currentTarget, "fam_approve", { familyId: f.id })) next(); } }, "✅ Approve: proof checks out"),
+        h("button", { class: outside ? "btn red" : "btn ghost", onclick: async e => {
+          // Two taps, remembered across redraws (the proof loading in can redraw the screen).
+          if (ui.outsideArm !== f.id) {
+            ui.outsideArm = f.id; render(true);
+            setTimeout(() => { if (ui.outsideArm === f.id) { ui.outsideArm = null; if (ui.review) render(true); } }, 5000);
+            return;
+          }
+          ui.outsideArm = null;
+          const r = await act(e.currentTarget, "fam_outside", { familyId: f.id });
+          if (r && r.extra && !r.extra.emailed) toast("No email on file. Call or text them: " + (r.extra.phone || "no phone either"), true);
+          if (r) next();
+        } }, ui.outsideArm === f.id ? "📍 Send them the kind note? Tap again" : "📍 Outside our area"),
+        h("button", { class: "btn ghost", onclick: () => { skip.add(f.id); render(true); next(); } }, "⏭ Skip for now")),
+      h("div", { class: "row" },
+        f.hasPhoto ? h("button", { class: "btn ghost sm", onclick: e => viewFile(e.currentTarget, f.id, "photo") }, "📷 Family photo") : null,
+        h("button", { class: "btn ghost sm", onclick: () => { ui.review = false; goFamily(f.id); } }, "Open their full card"),
+        h("button", { class: "btn ghost sm", style: "margin-left:auto", onclick: () => removeDialog(f) }, "🗑 Remove (duplicate, doesn't add up…)"))));
+}
+function proofBox(f) {
+  const box = h("div", { class: "block" }, h("h4", null, "🏠 Proof of address"));
+  if (!f.hasProof) { box.append(h("p", { class: "small", style: "margin:0", text: "No proof uploaded. Reach out to the family first, or skip them for now." })); return box; }
+  const c = ui.proofCache[f.id];
+  if (c && c.url) {
+    box.append(/^image\//.test(c.type) && !/heic|heif/.test(c.type)
+      ? h("img", { src: c.url, alt: "Proof of address for " + famLabel(f), style: "display:block;max-width:100%;max-height:60vh;border-radius:10px;margin:0 auto" })
+      : h("a", { class: "btn ghost sm", href: c.url, target: "_blank", rel: "noopener", download: c.name }, "Open the " + (c.type === "application/pdf" ? "PDF" : "file")));
+    box.append(h("p", { class: "tiny muted", style: "margin:6px 0 0", text: "For checking only. Never posted or shared outside the adoption team." }));
+  } else if (c && c.err) {
+    box.append(h("p", { class: "small", style: "margin:0 0 6px", text: "We couldn't load it." }),
+      h("button", { class: "btn ghost sm", onclick: () => { delete ui.proofCache[f.id]; render(true); } }, "Try again"));
+  } else {
+    box.append(h("p", { class: "small muted", style: "margin:0" }, h("span", { class: "spin" }), " Loading their proof…"));
+    if (!c) loadProof(f.id);
+  }
+  return box;
+}
+async function loadProof(id) {
+  ui.proofCache[id] = { loading: true };
+  try {
+    const r = await api("file", { familyId: id, which: "proof" }, true);
+    const bin = atob(r.data), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    ui.proofCache[id] = { url: URL.createObjectURL(new Blob([bytes], { type: r.type })), type: r.type, name: r.name };
+  } catch (e) { ui.proofCache[id] = { err: true }; }
+  if (ui.review && ui.tab === "families") render(true);
+}
+/* ---------- one gift deadline for everyone ---------- */
+function deadlineCard() {
+  const st = S.settings || {};
+  const late = S.families.filter(giftsLate).length;
+  const line = st.giftDeadline
+    ? "🗓️ Gifts due " + st.deadlineText + (daysLeft(st.giftDeadline) >= 0 ? " (" + (daysLeft(st.giftDeadline) === 0 ? "today" : plural(daysLeft(st.giftDeadline), "day", "days") + " away") + ")" : " (passed)") + " · " + plural(late, "family's", "families'") + " gifts not in yet" + (st.reminders ? " · ⏰ reminders on" : "")
+    : "🗓️ No gift deadline set yet";
+  if (!me.isLead) return h("div", { class: "small", style: "font-weight:700", text: line });
+  const open = ui.deadlineOpen;
+  if (!open) return h("div", { class: "row" }, h("span", { class: "small", style: "font-weight:700", text: line }),
+    h("button", { class: "btn ghost sm", onclick: () => { ui.deadlineOpen = true; render(true); } }, st.giftDeadline ? "Change" : "Set a deadline"));
+  const form = h("form", { class: "card stack", "data-draft": "deadline", style: "border:2px solid var(--gold)", onsubmit: async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const r = await act($("button[type=submit]", form), "settings_save", { giftDeadline: fd.get("giftDeadline") || "", reminders: !!fd.get("reminders") });
+      if (r) { ui.deadlineOpen = false; render(true); }
+    } },
+    h("h3", null, "🗓️ Gift deadline"),
+    h("p", { class: "small muted", style: "margin:0" }, "One date for everyone: when gifts need to be at a drop-off spot (or delivered, for adopters who deliver themselves). It shows on every adopter's page and in their wish-list email, and families whose gifts aren't in by then get flagged for you."),
+    h("label", { class: "f" }, "Gifts due by", h("input", { type: "date", name: "giftDeadline", value: st.giftDeadline || "" })),
+    h("label", { class: "row small" }, h("input", { type: "checkbox", name: "reminders", value: "on", checked: st.giftDeadline ? st.reminders : true, style: "width:18px;height:18px;accent-color:var(--green)" }),
+      "⏰ Email adopters whose gifts aren't in yet a friendly reminder, a week before and 2 days before. (If the date is less than a week away, the first one goes out right away.)"),
+    h("div", { class: "row" }, h("button", { class: "btn", type: "submit" }, "Save"),
+      h("button", { class: "btn ghost", type: "button", onclick: () => { ui.deadlineOpen = false; delete ui.drafts.deadline; render(true); } }, "Cancel")));
+  return form;
 }
 function famCard(f) {
   const isOpen = ui.open.has(f.id);
@@ -992,6 +1165,7 @@ function famCard(f) {
           f.inArea && f.inArea !== "Yes" ? h("span", { class: "badge b-red", text: "Outside area" }) : null,
           f.flag ? h("span", { class: "badge b-red", text: "⚠️ Flagged" }) : null,
           me.isAdopt && awaitingReply(f) ? h("span", { class: "badge b-red", text: "💬 Adopter wrote" }) : null,
+          me.isAdopt && familyWrote(f) ? h("span", { class: "badge b-red", text: "💬 Family wrote" }) : null,
           ["Adopted", "Delivered"].includes(f.status) && !isSwing(f) ? h("span", { class: "badge " + (f.delivery === "Adopter" ? "b-pending" : "b-role"), text: f.delivery === "Adopter" ? "🎁 Adopter delivers" : "🛷 Santa delivers" }) : null,
           me.isAdopt && f.status === "Adopted" && !isSwing(f) && !f.contacted ? h("span", { class: "badge b-pending", text: /^No email/.test(f.told) ? "📞 Doesn't know yet" : "📞 Not contacted" }) : null),
         h("div", { class: "kidline", text: kidsLine(f) + (f.town ? " · " + f.town : "") }),
@@ -1133,6 +1307,8 @@ function famBody(f) {
   body.append(h("div", { class: "block" }, h("h4", null, "Crew notes"),
     f.teamNotes ? h("div", { class: "notes", text: f.teamNotes }) : h("div", { class: "small muted", text: "No notes yet." }),
     h("div", { style: "margin-top:8px" }, noteForm)));
+
+  if (me.isAdopt) body.append(familyThread(f));
 
   body.append(h("div", { class: "row" },
     h("button", { class: "btn ghost sm", onclick: () => go("tasks", { newTask: { familyId: f.id, title: "" } }) }, "+ Post a task for this family"),
@@ -1293,6 +1469,8 @@ function viewRoutes() {
   return h("div", { class: "stack" },
     h("div", { class: "section-title", style: "margin-top:0" }, h("h2", null, "Christmas Eve routes")),
     laneChips,
+    S.settings && S.settings.giftDeadline ? h("div", { class: "small", style: "font-weight:700", text: "🗓️ Gifts due " + S.settings.deadlineText }) : null,
+    me.isLead ? teamSetupCard() : null,
     routeMapCard(active, ordered),
     h("div", { class: "banner" }, "We plan the Santas around the adoptions. Each Santa team sees the addresses for its own stops as soon as they're assigned. Swing-bys and families nobody adopted are random stops 🎲: they go on " + S.randomRoute + " unless a Santa has said they're OK with random stops, and none of them are promised."),
     me.isAdopt ? h("div", { class: "row" }, h("button", { class: "btn gold", onclick: addSwingDialog }, "🎅 + Add a swing-by (from Facebook or a call)")) : null,
@@ -1304,6 +1482,34 @@ function viewRoutes() {
       "Nobody has adopted these families yet. They go on " + S.randomRoute + " unless a Santa who's OK with random deliveries takes them."),
     unassignedList("Swing-by requests (" + unassignedSwing.length + ")", unassignedSwing,
       "Families who'd love a quick Santa visit. No promises: fit in what the sleigh can manage. They go on " + S.randomRoute + " unless a Santa who's OK with random stops takes them."));
+}
+// Leads: set up Santa teams in one place. ELVES with the same team name ride together.
+function teamSetupCard() {
+  const teams = realTeams();
+  const open = ui.teamSetup !== undefined ? ui.teamSetup : !teams.length;
+  const approved = S.crew.filter(c => c.access === "Approved");
+  const santas = approved.filter(c => (c.team && c.team.toLowerCase() !== String(S.randomRoute).toLowerCase()) || /santa|deliver/i.test(c.wants));
+  const shown = ui.teamAll ? approved : santas;
+  const head = h("div", { class: "row" },
+    h("h3", { style: "font-size:19px", text: "🛷 Santa teams" + (teams.length ? " (" + teams.length + ")" : "") }),
+    h("span", { class: "small muted", text: teams.length ? teams.join(" · ") : "none yet" }),
+    h("button", { class: "btn ghost sm", style: "margin-left:auto", onclick: () => { ui.teamSetup = !open; render(true); } }, open ? "Hide" : "Set up teams"));
+  if (!open) return h("div", { class: "card" }, head);
+  const row = c => {
+    const form = h("form", { class: "help-item", "data-draft": "team:" + c.row, onsubmit: async e => {
+        e.preventDefault(); ui.teamSetup = true;   // stay open while you set up the next person
+        await act($("button", form), "crew_update", { row: c.row, name: c.name, team: $("input", form).value });
+      } },
+      h("div", { class: "grow" }, h("b", { text: c.name }), h("div", { class: "tiny muted", text: c.wants || "" })),
+      h("input", { type: "text", name: "team", list: "team-list-setup", value: c.team || "", placeholder: "Team name", style: "width:auto;flex:0 1 170px" }),
+      h("button", { class: "btn sm", type: "submit" }, "Save"));
+    return form;
+  };
+  return h("div", { class: "card", style: teams.length ? "" : "border:2px solid var(--gold)" }, head,
+    h("p", { class: "small muted", style: "margin:6px 0 4px" }, "Each team is one Santa plus a helper or two, with its own route. Type the same team name (like “Team Rudolph”) next to everyone riding together and tap Save. Then put families on each team's route below."),
+    h("datalist", { id: "team-list-setup" }, teams.map(t => h("option", { value: t }))),
+    shown.length ? shown.map(row) : h("p", { class: "small", text: "Nobody signed up to be a Santa or deliver yet. Tap “Show everyone” to pick from the whole crew." }),
+    h("button", { class: "linkish small", style: "margin-top:6px", onclick: () => { ui.teamAll = !ui.teamAll; render(true); } }, ui.teamAll ? "Only show Santas & drivers" : "Show everyone on the crew (" + approved.length + ")"));
 }
 // Adopters who deliver their own gifts. Hands-off: they confirm from their wish-list page.
 function adopterDeliveries(list, laneChips) {
@@ -1493,6 +1699,7 @@ function viewCrew() {
     me.isLead && never.length ? h("div", { class: "card", style: "border:2px solid var(--gold)" },
       h("h3", { style: "font-size:19px", text: "🔑 Approved, but haven't signed in yet (" + never.length + ")" }),
       h("p", { class: "small muted", style: "margin:4px 0 6px" }, "They may have missed the email or not know how to get in. Resend their sign-in steps, or text them their code."),
+      never.length > 1 ? h("button", { class: "btn sm", style: "margin-bottom:6px", onclick: e => resendAll(e.currentTarget) }, "📨 Resend to all " + never.length) : null,
       never.map(c => h("div", { class: "help-item" },
         h("div", { class: "grow" }, h("b", { text: c.name }), h("div", { class: "small muted", text: [c.email ? "✉️ " + c.email : "No email: text only", c.phone].filter(Boolean).join(" · ") })),
         h("button", { class: "btn sm", onclick: async e => { const r = await act(e.currentTarget, "crew_resend", { row: c.row, name: c.name }); if (r && r.extra) showCode(r.extra); } }, c.email ? "📨 Resend" : "💬 Text code")))) : null,
