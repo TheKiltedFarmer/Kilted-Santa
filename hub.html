@@ -218,6 +218,30 @@
   .msg-meta { font-size: 11.5px; color: var(--ink-soft); margin: 2px 4px; }
   .chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); background: var(--surface); }
   .chat-form textarea { min-height: 44px; max-height: 140px; flex: 1; }
+  /* Quick chat: a bubble on every screen */
+  .qc-fab { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 40; width: 58px; height: 58px; border-radius: 50%; border: 0;
+    background: var(--green); color: #fff; font-size: 26px; box-shadow: 0 8px 24px rgba(36,104,47,.35); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .qc-fab .count { position: absolute; top: -4px; right: -4px; background: var(--red); color: #fff; border-radius: 999px; font: 800 12px "Nunito", sans-serif; padding: 0 7px; line-height: 20px; box-shadow: 0 0 0 2px #fff; }
+  .qc-fab.ping { animation: qcping .9s ease-out 2; }
+  @keyframes qcping { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+  .qc-panel { position: fixed; z-index: 45; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); width: min(390px, calc(100vw - 32px)); height: min(580px, calc(100vh - 120px));
+    display: flex; flex-direction: column; padding: 0; overflow: hidden; background: var(--surface); border: 1.5px solid var(--line); border-radius: 18px; box-shadow: 0 18px 48px rgba(20,30,24,.28); }
+  .qc-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .qc-head b { flex: 1; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qc-x { background: none; border: 0; font-size: 22px; min-width: 44px; min-height: 44px; cursor: pointer; color: var(--ink); }
+  .qc-list { flex: 1; overflow-y: auto; }
+  .qc-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; text-align: left; cursor: pointer; min-height: 56px; font: inherit; color: inherit; }
+  .qc-row:hover { background: var(--bg); }
+  .qc-row .grow { min-width: 0; }
+  .qc-row .prev { display: block; font-size: 13px; color: var(--ink-soft, #5c6b62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qc-row .count { background: var(--red); color: #fff; border-radius: 999px; font-size: 12px; font-weight: 800; padding: 0 7px; line-height: 20px; }
+  .qc-sec { padding: 8px 14px 4px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft, #5c6b62); background: var(--bg); }
+  .qc-panel .chat-msgs { flex: 1; }
+  .qc-panel[hidden], .qc-fab[hidden] { display: none !important; }
+  #view { padding-bottom: 96px; }   /* room so the chat bubble never covers a button */
+  @media (max-width: 560px) {
+    .qc-panel { inset: 0; width: auto; height: auto; right: 0; bottom: 0; border-radius: 0; border: 0; }
+  }
   .flag { background: var(--red-soft); border: 1px solid #f3c9cb; color: var(--red); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; font-weight: 700; }
 
   /* login */
@@ -451,6 +475,7 @@ $("#login-form").addEventListener("submit", async e => {
 });
 function logout(message) {
   clearCred(); cred = null; memCred = null; me = null; S = null;
+  if (qcFab) { qc.open = false; qc.ch = null; qcFab.hidden = true; qcPanel.hidden = true; }
   $("#app").classList.add("hidden"); $("#login").classList.remove("hidden");
   const msg = $("#login-msg");
   if (message) { msg.textContent = message; msg.classList.remove("hidden"); } else msg.classList.add("hidden");
@@ -559,6 +584,7 @@ function render(force) {
   $("#view").replaceChildren(view);
   restoreDrafts(view);
   window.scrollTo({ top: y });
+  qcSetup(); if (ui.tab === "chat") qc.open = false; qcDraw();
 }
 
 /* ================= HOME ================= */
@@ -844,7 +870,8 @@ function taskCard(t) {
       t.status !== "Done" && (mineT || t.status === "Open") && ui.taskDone !== t.id ? h("button", { class: "btn sm ghost", onclick: () => { ui.taskDone = t.id; ui.taskNote = null; render(true); } }, "✅ Mark done") : null,
       ui.taskNote !== t.id && ui.taskDone !== t.id ? h("button", { class: "btn sm ghost", onclick: () => { ui.taskNote = t.id; ui.taskDone = null; ui.focusNote = true; render(true); } }, "📝 Add an update") : null,
       t.status === "Claimed" && (mineT || me.isLead) ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_unclaim", { taskId: t.id }) }, "Let someone else take it") : null,
-      t.status === "Claimed" && !mineT && !me.isLead ? h("span", { class: "small muted", text: "Want to help? Post an update, or message " + firstName(t.claimedBy) + " in Chat." }) : null,
+      t.status === "Claimed" && !mineT && canChat(t.claimedBy) ? h("button", { class: "btn sm ghost", onclick: () => chatWith(t.claimedBy, "About “" + t.title + "”: ") }, "💬 Ask " + firstName(t.claimedBy)) : null,
+      t.status === "Open" && canChat(t.createdBy) ? h("button", { class: "btn sm ghost", onclick: () => chatWith(t.createdBy, "About “" + t.title + "”: ") }, "💬 Ask " + firstName(t.createdBy)) : null,
       t.status === "Done" ? h("button", { class: "btn sm ghost", onclick: e => act(e.currentTarget, "task_reopen", { taskId: t.id }) }, "Reopen") : null,
       (t.createdBy === me.name || me.isLead) ? h("button", { class: "btn sm ghost", style: "margin-left:auto", onclick: e => { if (confirmInline(e.currentTarget, "Delete?")) act(e.currentTarget, "task_delete", { taskId: t.id }); } }, "Delete") : null));
 }
@@ -1204,7 +1231,8 @@ function famBody(f) {
       f.status === "Pending review" ? h("button", { class: "btn", onclick: e => act(e.currentTarget, "fam_approve", { familyId: f.id }) }, "✅ Approve: proof checks out") : null,
       f.hasProof ? h("button", { class: "btn ghost sm", onclick: e => viewFile(e.currentTarget, f.id, "proof") }, "🏠 View proof of address") : null,
       f.hasPhoto ? h("button", { class: "btn ghost sm", onclick: e => viewFile(e.currentTarget, f.id, "photo") }, "📷 View family photo") : null,
-      h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_take", { familyId: f.id }) }, f.handledBy === me.name ? "Hand off" : "🙋 I'll handle this family")));
+      h("button", { class: "btn ghost sm", onclick: e => act(e.currentTarget, "fam_take", { familyId: f.id }) }, f.handledBy === me.name ? "Hand off" : "🙋 I'll handle this family"),
+      canChat(f.handledBy) ? h("button", { class: "btn ghost sm", onclick: () => chatWith(f.handledBy, "About Family " + f.id + ": ") }, "💬 Ask " + firstName(f.handledBy)) : null));
     if (f.inArea && f.inArea !== "Yes") body.append(h("div", { class: "banner", text: "⚠️ ZIP " + (f.zip || "") + " is outside " + S.serviceArea + ". Make sure a Santa team can reach them before approving." }));
   }
 
@@ -1747,6 +1775,7 @@ function crewCard(c) {
     c.wants ? h("div", { class: "small", style: "margin-top:4px", text: c.wants }) : null,
     h("div", { class: "small muted", text: [c.availability, c.vehicle === "Yes" ? "🚗 has a vehicle" : "", c.town].filter(Boolean).join(" · ") }),
     h("div", { class: "row", style: "margin-top:8px" }, c.me ? null : telLinks(c.phone, c.email),
+      !c.me && c.access === "Approved" && c.elfId ? h("button", { class: "btn sm", onclick: () => chatWith(c.name) }, "💬 Message " + firstName(c.name)) : null,
       c.access === "Approved" ? h("button", { class: "btn ghost sm", onclick: () => showActivity(c.name) }, "🔎 What " + (c.me ? "I've" : firstName(c.name) + "'s") + " been up to") : null));
   if (me.isLead && !c.me) {
     const form = h("form", { class: "grid2", "data-draft": "crew:" + c.row, style: "margin-top:10px", onsubmit: async e => {
@@ -2011,18 +2040,19 @@ function viewChat() {
         h("div", { class: "chat-head", text: cur.label + (cur.id === "adopt" ? " · Adoption ELVES and Leads" : cur.id.startsWith("team:") ? " · this Santa team" : cur.id.startsWith("dm:") ? " · just the two of you" : " · the whole crew") }),
         msgs, form)));
 }
-function fillMessages(box) {
+function fillMessages(box, ch) {
   box = box || document.getElementById("chat-msgs"); if (!box) return;
-  const list = S.chat.filter(m => m.ch === ui.chatCh);
+  ch = ch || ui.chatCh;
+  const list = S.chat.filter(m => m.ch === ch);
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
   box.replaceChildren(...(list.length ? list.map(m => {
     const mine = m.fromId === me.id;
     return h("div", { class: "msg-row" + (mine ? " mine" : "") },
       h("div", { class: "msg-meta", text: (mine ? "You" : firstName(m.from)) + " · " + ago(m.when) }),
       h("div", { class: "bubble", text: m.text }));
-  }) : [h("div", { class: "empty", text: "No messages yet. Say hi to the crew! 👋" })]));
+  }) : [h("div", { class: "empty", text: ch.startsWith("dm:") ? "No messages yet. Say hi! 👋" : "No messages yet. Say hi to the crew! 👋" })]));
   if (atBottom || !box.dataset.ready) { box.scrollTop = box.scrollHeight; box.dataset.ready = "1"; }
-  markSeen(ui.chatCh);
+  markSeen(ch);
 }
 function mergeChat(list) {
   if (!list || !list.length) return;
@@ -2039,11 +2069,134 @@ async function chatCall(action, payload) {
   if (!res.ok) throw new Error(res.error || "Something went wrong.");
   return res;
 }
-// Quick chat refresh while the Chat tab is open.
-setInterval(async () => {
-  if (!S || !me || ui.tab !== "chat" || document.visibilityState !== "visible" || !(cred || memCred)) return;
-  try { const res = await chatCall("chat", {}); if (res.chat && res.chat.length) { mergeChat(res.chat); fillMessages(); } } catch (e) {}
-}, 8000);
+/* ---------- QUICK CHAT: a 💬 bubble on every screen, for quick back-and-forth ---------- */
+const qc = { open: false, ch: null, drafts: {}, tick: 0 };
+let qcFab, qcPanel;
+function qcSetup() {
+  if (qcFab) return;
+  qcFab = h("button", { class: "qc-fab", "aria-label": "Quick chat", onclick: () => { qc.open = !qc.open; qcDraw(); if (qc.open) qcPoll(); } }, "💬");
+  qcPanel = h("div", { class: "qc-panel", role: "dialog", "aria-label": "Quick chat", hidden: true });
+  document.body.append(qcPanel, qcFab);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && qc.open) { qc.open = false; qcDraw(); } });
+}
+// Open a conversation from anywhere: quickChat(dmChannel(id)), or chatWith("Holly Hicks", "About Family KS-024: ")
+function quickChat(ch, prefill) {
+  qcSetup(); qc.open = true; qc.ch = ch || null;
+  if (ch && prefill && !qc.drafts[ch]) qc.drafts[ch] = prefill;
+  qcDraw(); qcPoll();
+}
+const canChat = name => !!(S && me && name && S.crew.some(x => x.name === name && x.elfId && x.access === "Approved" && x.elfId !== me.id));
+function chatWith(name, prefill) {
+  const c = S.crew.find(x => x.name === name && x.elfId && x.access === "Approved");
+  if (!c) { toast("Couldn't find " + firstName(name) + " on the crew.", true); return; }
+  if (c.elfId === me.id) return;
+  quickChat(dmChannel(c.elfId), prefill);
+}
+function qcLabel(ch) {
+  const c = channels().find(x => x.id === ch);
+  if (c) return c.label;
+  if (ch.startsWith("dm:")) { const o = crewById(ch.slice(3).split("|").find(id => id !== me.id)); return "💬 " + (o ? o.name : "An ELF"); }
+  return ch;
+}
+function qcLast(ch) { const l = S.chat.filter(m => m.ch === ch); return l[l.length - 1]; }
+function qcBadge() {
+  if (!qcFab) return;
+  const show = !!(S && me) && !$("#app").classList.contains("hidden") && ui.tab !== "chat";
+  qcFab.hidden = !show;
+  if (!show) { qcPanel.hidden = true; return; }
+  const n = unreadTotal();
+  qcFab.replaceChildren(qc.open ? "✕" : "💬", n && !qc.open ? h("span", { class: "count", text: n > 99 ? "99+" : n }) : "");
+  qcFab.setAttribute("aria-label", qc.open ? "Close quick chat" : "Quick chat" + (n ? ", " + n + " new" : ""));
+}
+function qcDraw() {
+  qcSetup(); qcBadge();
+  if (!qc.open || qcFab.hidden) { qcPanel.hidden = true; return; }
+  qcPanel.hidden = false;
+  const close = h("button", { class: "qc-x", "aria-label": "Close", onclick: () => { qc.open = false; qcDraw(); } }, "✕");
+  if (!qc.ch) {
+    // Everyone you can talk to: group chats, then people (recent and unread first)
+    const groups = channels().filter(c => !c.id.startsWith("dm:"));
+    const people = S.crew.filter(c => c.access === "Approved" && c.elfId && c.elfId !== me.id)
+      .map(c => ({ c, ch: dmChannel(c.elfId) }))
+      .sort((a, b) => (unreadIn(b.ch) - unreadIn(a.ch)) || String((qcLast(b.ch) || {}).when || "").localeCompare(String((qcLast(a.ch) || {}).when || "")) || a.c.name.localeCompare(b.c.name));
+    const row = (ch, label, sub) => {
+      const last = qcLast(ch), n = unreadIn(ch);
+      return h("button", { class: "qc-row", onclick: () => { qc.ch = ch; qcDraw(); } },
+        h("div", { class: "grow" }, h("b", { text: label }),
+          h("span", { class: "prev", text: last ? (last.fromId === me.id ? "You: " : firstName(last.from) + ": ") + last.text : sub || "" })),
+        n ? h("span", { class: "count", text: n }) : null);
+    };
+    qcPanel.replaceChildren(
+      h("div", { class: "qc-head" }, h("b", null, "💬 Quick chat"), close),
+      h("div", { class: "qc-list" },
+        h("div", { class: "qc-sec" }, "Message one person"),
+        people.length ? people.map(p => row(p.ch, p.c.name, p.c.role + (p.c.team ? " · 🛷 " + p.c.team : ""))) : h("p", { class: "small muted", style: "padding:10px 14px" }, "No one else on the crew yet."),
+        h("div", { class: "qc-sec" }, "Group chats"),
+        groups.map(g => row(g.id, g.label))));
+    return;
+  }
+  const ch = qc.ch;
+  const to = ch.startsWith("dm:") ? ch.slice(3).split("|").find(id => id !== me.id) : "";
+  const msgs = h("div", { class: "chat-msgs", id: "qc-msgs", "aria-live": "polite" });
+  const ta = h("textarea", { maxlength: 1000, rows: 1, placeholder: "Message " + qcLabel(ch).replace(/^\S+\s/, "") + "…",
+    oninput: e => { qc.drafts[ch] = e.target.value; },
+    onkeydown: e => { if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(hover: hover)").matches) { e.preventDefault(); form.requestSubmit(); } } });
+  ta.value = qc.drafts[ch] || "";
+  const send = h("button", { class: "btn", type: "submit" }, "Send");
+  const form = h("form", { class: "chat-form", onsubmit: async e => {
+      e.preventDefault();
+      const text = ta.value.trim(); if (!text) return;
+      send.disabled = true; send.textContent = "Sending…"; ui.inflight++;
+      try {
+        const res = await chatCall("chat_send", { channel: ch, to, text, rid: newRid() });
+        delete qc.drafts[ch]; ta.value = "";
+        mergeChat(res.chat); fillMessages(msgs, ch); ta.focus();
+      } catch (ex) { toast(ex.message || "Message didn't send. Your message is still here. Try again.", true); }
+      finally { ui.inflight--; send.disabled = false; send.textContent = "Send"; }
+    } }, ta, send);
+  qcPanel.replaceChildren(
+    h("div", { class: "qc-head" },
+      h("button", { class: "qc-x", "aria-label": "Back to all chats", onclick: () => { qc.ch = null; qcDraw(); } }, "←"),
+      h("b", { text: qcLabel(ch) }), close),
+    msgs, form);
+  fillMessages(msgs, ch);
+  // Put the cursor at the end so a prefilled "About Family KS-024: " is ready to finish.
+  setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 30);
+}
+function qcRefresh() {
+  if (!qcPanel) return;
+  if (qc.open && qc.ch) fillMessages($("#qc-msgs"), qc.ch);
+  else if (qc.open) qcDraw();
+  qcBadge();
+  const chatTab = [...$("#tabs").children][TABS.findIndex(t => t[0] === "chat")];
+  if (chatTab) { const n = ui.tab === "chat" ? 0 : unreadTotal(), c = $(".count", chatTab); if (c) c.remove(); if (n) chatTab.append(h("span", { class: "count", text: n })); }
+}
+async function qcPoll() {
+  if (!S || !me || !(cred || memCred)) return;
+  const before = unreadTotal();
+  try {
+    const res = await chatCall("chat", {});
+    if (res.chat && res.chat.length) {
+      mergeChat(res.chat);
+      if (ui.tab === "chat") fillMessages();
+      qcRefresh();
+      // A gentle nudge when something new arrives and you're not looking at it.
+      const fresh = res.chat.filter(m => m.fromId !== me.id && !(qc.open && qc.ch === m.ch) && !(ui.tab === "chat" && ui.chatCh === m.ch));
+      if (unreadTotal() > before && fresh.length) {
+        const m = fresh[fresh.length - 1];
+        if (qcFab && !qcFab.hidden) { qcFab.classList.remove("ping"); void qcFab.offsetWidth; qcFab.classList.add("ping"); }
+        toast("💬 " + firstName(m.from) + (m.ch.startsWith("dm:") ? "" : " in " + qcLabel(m.ch).replace(/^\S+\s/, "")) + ": " + m.text.slice(0, 60) + (m.text.length > 60 ? "…" : ""));
+      }
+    }
+  } catch (e) {}
+}
+// Every 4 seconds while you're chatting (Chat tab or the bubble), every 20 seconds otherwise.
+setInterval(() => {
+  if (!S || !me || document.visibilityState !== "visible" || !(cred || memCred)) return;
+  qc.tick++;
+  if (!(ui.tab === "chat" || qc.open) && qc.tick % 5) return;
+  qcPoll();
+}, 4000);
 function showCode(x) {
   const msg = "Hi " + firstName(x.name) + "! You're one of Santa's ELVES 🎅 Here's your way into Santa's Operations Hub:\n" +
     new URL("hub.html", S.publicUrl || location.href).href + "\nSign in with your phone number or email.\nYour ELF code: " + x.code;
